@@ -157,6 +157,7 @@ function jogadaIA(jogador) {
   jogarCarta(jogador, indice);
 }
 
+// --- NOVA LÓGICA DE RESOLUÇÃO DA VAZA ---
 function resolverVaza() {
   const forcas = state.mesa.map(c => forcaDaCarta(c, state.manilhaValor));
   const maxForca = Math.max(...forcas);
@@ -169,9 +170,38 @@ function resolverVaza() {
     state.vazasGanhas[vencedor]++;
     const pontos = PONTOS_POR_VAZA[state.vazaAtual] ?? 0;
     
-    if (pontos > 0) state.tentos[vencedor] += pontos;
-    
-    state.mensagem = `${NOMES[vencedor]} ganhou a ${state.vazaAtual + 1}ª vaza (+${pontos})`;
+    // Soma os pontos da vaza imediatamente ao jogador
+    if (pontos > 0) {
+      state.tentos[vencedor] += pontos;
+      
+      // CHECAGEM PONTO A PONTO: Estourou ou Ganhou?
+      if (state.tentos[vencedor] > 12) {
+        // Passou de 12 (ex: 11 + 3 = 14). Estourou!
+        state.tentos[vencedor] = 0;
+        state.zeradas[vencedor]++;
+        state.mensagem = `${NOMES[vencedor]} estourou (${pontos + (state.tentos[vencedor] === 0 ? 13 : 14)}) e voltou pro ZERO!`;
+      } else if (state.tentos[vencedor] === 12) {
+        // Cravou 12! Fim de jogo!
+        state.fase = "fimPartida";
+        state.mensagem = `${NOMES[vencedor]} fez 12 tentos e VENCEU A PARTIDA!`;
+        
+        // Verifica o castigo (quem está com zero)
+        state.castigadosFinais = [];
+        for (let j = 0; j < 3; j++) {
+          if (j !== vencedor && state.tentos[j] === 0) {
+            state.castigadosFinais.push(j);
+          }
+        }
+        if (state.castigadosFinais.length > 0) {
+          state.fase = "castigo";
+        }
+        
+        render();
+        return; // Para a vaza aqui, o jogo acabou
+      } else {
+        state.mensagem = `${NOMES[vencedor]} ganhou a ${state.vazaAtual + 1}ª vaza (+${pontos})`;
+      }
+    }
   } else {
     state.mensagem = `Empate na ${state.vazaAtual + 1}ª vaza (ninguém pontua)`;
   }
@@ -195,48 +225,9 @@ function resolverVaza() {
 }
 
 function resolverMao() {
-  const [g1, g2, g3] = state.vazasGanhas;
-  let vencedor = null;
-  if (g1 > g2 && g1 > g3) vencedor = 0;
-  else if (g2 > g1 && g2 > g3) vencedor = 1;
-  else if (g3 > g1 && g3 > g2) vencedor = 2;
-
   state.fase = "fimMao";
-  state.mensagem = vencedor !== null
-    ? `${NOMES[vencedor]} ganhou a mão`
-    : "Mão empatada — ninguém ganhou";
-
-  verificarFimDeJogo();
+  state.mensagem = "Fim da mão. Preparem a próxima!";
   render();
-}
-
-function verificarFimDeJogo() {
-  for (let i = 0; i < 3; i++) {
-    if (state.tentos[i] >= 13) {
-      state.tentos[i] = 0;
-      state.zeradas[i]++;
-      state.mensagem = `${NOMES[i]} estourou (13) e voltou pro ZERO!`;
-    }
-  }
-
-  for (let i = 0; i < 3; i++) {
-    if (state.tentos[i] >= 12) {
-      state.fase = "fimPartida";
-      state.mensagem = `${NOMES[i]} fez 12 tentos e VENCEU A PARTIDA!`;
-      
-      state.castigadosFinais = [];
-      for (let j = 0; j < 3; j++) {
-        if (j !== i && state.tentos[j] === 0) {
-          state.castigadosFinais.push(j);
-        }
-      }
-
-      if (state.castigadosFinais.length > 0) {
-        state.fase = "castigo";
-      }
-      return;
-    }
-  }
 }
 
 function mostrarTapa(jogadores) {
@@ -257,6 +248,7 @@ document.getElementById("btn-fechar-tapa").addEventListener("click", () => {
   render();
 });
 
+// --- RENDERIZAÇÃO ---
 function render() {
   renderStatus();
   renderBaralhoVira();
