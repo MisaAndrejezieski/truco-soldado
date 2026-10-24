@@ -1,5 +1,5 @@
 // ============================================================
-// TRUCO SOLDADO — v2.0 (Porcos, Tapa Animado, Ordem do Sul)
+//                      TRUCO SOLDADO 
 // ============================================================
 
 const NAIPES = ["ouro", "espada", "copas", "paus"]; 
@@ -52,7 +52,7 @@ const state = {
   fase: "jogando", 
   vencedorMao: null,
   mensagem: "",
-  castigadoAtual: null, // Guarda quem zerou para mostrar o overlay
+  castigadoAtual: null,
 };
 
 function recalcularEscura() {
@@ -169,10 +169,10 @@ function resolverVaza() {
     vencedor = vencedores[0];
     state.vazasGanhas[vencedor]++;
     const pontos = PONTOS_POR_VAZA[state.vazaAtual] ?? 0;
-    if (pontos > 0) aplicarTentos(vencedor, pontos);
     
-    if (state.fase === "fimPartida") return;
-
+    // AQUI: Aplica os tentos mas NÃO trava o jogo se der 12. Deixa a mão terminar.
+    if (pontos > 0) state.tentos[vencedor] += pontos;
+    
     state.mensagem = `${NOMES[vencedor]} ganhou a ${state.vazaAtual + 1}ª vaza (+${pontos})`;
   } else {
     state.mensagem = `Empate na ${state.vazaAtual + 1}ª vaza (ninguém pontua)`;
@@ -181,7 +181,7 @@ function resolverVaza() {
   state.vazaAtual++;
 
   if (state.vazaAtual >= 3) {
-    resolverMao();
+    resolverMao(); // Só resolve a mão quando as 3 vazas terminarem
     return;
   }
 
@@ -209,23 +209,31 @@ function resolverMao() {
     ? `${NOMES[vencedor]} ganhou a mão`
     : "Mão empatada — ninguém ganhou";
 
+  // CHECAGEM DE FIM DE JOGO AQUI (Depois que a mão acabou)
+  verificarFimDeJogo();
   render();
 }
 
-function aplicarTentos(jogador, pontos) {
-  state.tentos[jogador] += pontos;
-  
-  if (state.tentos[jogador] === 12) {
-    state.fase = "fimPartida";
-    state.mensagem = `🏆 ${NOMES[jogador]} fez 12 tentos e VENCEU A PARTIDA!`;
-  } else if (state.tentos[jogador] >= 13) {
-    // ESTOUROU! Volta a zero e chama o castigo
-    state.tentos[jogador] = 0;
-    state.zeradas[jogador]++;
-    state.castigadoAtual = jogador;
-    
-    // Trava o jogo até o jogador fechar o tapa
-    state.fase = "castigo";
+function verificarFimDeJogo() {
+  // 1. Checa se alguém bateu 13 ou mais (Estourou)
+  for (let i = 0; i < 3; i++) {
+    if (state.tentos[i] >= 13) {
+      state.tentos[i] = 0;
+      state.zeradas[i]++;
+      state.castigadoAtual = i;
+      state.fase = "castigo"; // Chama o tapa na vaca
+      state.mensagem = `${NOMES[i]} estourou e foi para o ZERO!`;
+      return; // Para a checagem, o tapa tem que ser resolvido primeiro
+    }
+  }
+
+  // 2. Checa se alguém fez 12 (Ganhou)
+  for (let i = 0; i < 3; i++) {
+    if (state.tentos[i] >= 12) {
+      state.fase = "fimPartida";
+      state.mensagem = `🏆 ${NOMES[i]} fez 12 tentos e VENCEU A PARTIDA!`;
+      return;
+    }
   }
 }
 
@@ -241,6 +249,10 @@ document.getElementById("btn-fechar-tapa").addEventListener("click", () => {
   document.getElementById("tapa-overlay").classList.add("escondido");
   state.fase = "fimMao";
   state.mensagem = `O castigo foi aplicado. Preparem a próxima mão!`;
+  
+  // Se depois do tapa alguém tiver 12 (por exemplo, os outros continuaram),
+  // a gente não quer travar, então só deixa seguir.
+  verificarFimDeJogo(); 
   render();
 });
 
@@ -388,7 +400,7 @@ function criarCartaEl(carta, { virada = false, jogada = false, onClick = null } 
 
 // Inicialização
 document.getElementById("btn-nova-mao").addEventListener("click", () => {
-  if (state.fase === "castigo") return; // Não deixa pular o tapa
+  if (state.fase === "castigo" || state.fase === "fimPartida") return; 
   novaMao();
 });
 
