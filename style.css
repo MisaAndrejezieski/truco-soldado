@@ -40,27 +40,14 @@ h1 { font-size: 1.4rem; margin: 0; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .35rem;
+  gap: .3rem;
   transform: translate(-50%, -50%);
+  width: 160px;
 }
 
-/* Humano: embaixo */
-.assento-humano {
-  left: 50%;
-  top: 88%;
-}
-
-/* IA 1: esquerda-cima */
-.assento-ia1 {
-  left: 18%;
-  top: 22%;
-}
-
-/* IA 2: direita-cima */
-.assento-ia2 {
-  left: 82%;
-  top: 22%;
-}
+.assento-humano { left: 50%; top: 86%; }
+.assento-ia1    { left: 18%; top: 22%; }
+.assento-ia2    { left: 82%; top: 22%; }
 
 .assento .nome {
   font-weight: bold;
@@ -93,7 +80,6 @@ h1 { font-size: 1.4rem; margin: 0; }
   margin-top: .3rem;
 }
 
-/* Centro: cartas da vaza */
 .centro {
   position: absolute;
   left: 50%;
@@ -124,6 +110,7 @@ h1 { font-size: 1.4rem; margin: 0; }
 .carta.virada { background: var(--card-back); color: transparent; border-color: #111; }
 .carta.virada::after { content: "🐄"; color: #555; font-size: 1.3rem; }
 .carta.jogada { cursor: default; opacity: .95; }
+.carta.jogada:hover { transform: none; }
 .carta.vencedora { box-shadow: 0 0 0 3px var(--ok); }
 
 /* ---------- Placar compacto ---------- */
