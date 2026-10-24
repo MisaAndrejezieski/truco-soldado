@@ -1,0 +1,82 @@
+:root {
+  --bg: #1e1e2e;
+  --card: #f5f5f5;
+  --card-back: #2b2b3c;
+  --accent: #ffcc00;
+  --danger: #ff5555;
+  --ok: #50fa7b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: #eee;
+  padding: 1rem;
+}
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+h1 { font-size: 1.4rem; margin: 0; }
+.status { font-weight: bold; color: var(--accent); }
+
+.placar { display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; }
+.jogador {
+  background: #2b2b3c;
+  border-radius: 8px;
+  padding: .5rem 1rem;
+  min-width: 140px;
+  border: 2px solid transparent;
+}
+.jogador.ativo { border-color: var(--accent); }
+.jogador.escura { border-color: var(--danger); }
+.jogador .nome { font-weight: bold; }
+.jogador .tentos { font-size: 1.5rem; color: var(--accent); }
+.jogador .extras { font-size: .75rem; color: #aaa; }
+
+.mesa { display: flex; gap: 1rem; min-height: 120px; margin: 1rem 0; flex-wrap: wrap; }
+.mesa .slot { display: flex; flex-direction: column; gap: .25rem; }
+.mesa .slot .label { font-size: .75rem; color: #aaa; }
+
+.maos { display: flex; gap: 1rem; flex-wrap: wrap; }
+.mao { display: flex; gap: .5rem; }
+
+.carta {
+  width: 64px;
+  height: 92px;
+  border-radius: 6px;
+  background: var(--card);
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: transform .1s ease;
+  border: 1px solid #ccc;
+}
+.carta:hover { transform: translateY(-4px); }
+.carta.virada { background: var(--card-back); color: transparent; border-color: #111; }
+.carta.virada::after { content: "🐄"; color: #444; font-size: 1.6rem; }
+.carta.jogada { cursor: default; opacity: .9; }
+.carta.vencedora { box-shadow: 0 0 0 3px var(--ok); }
+
+.controles { margin: 1rem 0; display: flex; gap: .5rem; }
+button {
+  background: var(--accent);
+  color: #111;
+  border: 0;
+  padding: .5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.1); }
+
+.tapas { margin-top: 2rem; }
+.tapa-linha { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.tapa-log { margin-top: .5rem; font-size: .85rem; color: #ccc; max-height: 200px; overflow-y: auto; }
+.tapa-log div { padding: .15rem 0; border-bottom: 1px solid #333; }
