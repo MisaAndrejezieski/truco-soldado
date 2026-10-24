@@ -1,1010 +1,1095 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Truco Soldado — Definitivo</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: radial-gradient(circle at 50% 40%, #1e4d2b 0%, #0d2916 60%, #05140a 100%);
-    color: #fff;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px;
-    overflow-x: hidden;
-    user-select: none;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truco Soldado - Versão Definitiva</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Press Start 2P for playful retro elements -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #0b1d13;
+            overflow-x: hidden;
+        }
 
-  /* ---------- HEADER ---------- */
-  header {
-    width: 100%;
-    max-width: 900px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(6, 30, 18, 0.85);
-    border: 1px solid #1f4d34;
-    border-radius: 14px;
-    padding: 10px 14px;
-    margin-bottom: 8px;
-  }
-  header h1 { font-size: 18px; color: #facc15; letter-spacing: 1px; }
-  header small { color: #86efac; font-size: 11px; display: block; margin-top: 2px; }
-  .btn {
-    background: #065f46; color: #fde68a; border: 1px solid #10b981;
-    padding: 8px 12px; border-radius: 10px; font-weight: 600;
-    cursor: pointer; font-size: 13px; transition: 0.15s;
-  }
-  .btn:hover { background: #047857; }
-  .btn.reset { background: #991b1b; border-color: #ef4444; color: #fee2e2; }
-  .btn.reset:hover { background: #b91c1c; }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .title-font {
+            font-family: 'Fredoka One', cursive;
+        }
 
-  /* ---------- SCOREBOARD ---------- */
-  #scoreboard {
-    width: 100%;
-    max-width: 900px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .score-card {
-    background: rgba(0, 0, 0, 0.45);
-    border: 2px solid #334155;
-    border-radius: 12px;
-    padding: 8px 10px;
-    text-align: center;
-    transition: 0.2s;
-  }
-  .score-card.active {
-    border-color: #facc15;
-    box-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
-  }
-  .score-card .name { font-size: 12px; font-weight: 700; color: #cbd5e1; }
-  .score-card .tentos { font-size: 22px; font-weight: 800; color: #facc15; }
-  .score-card .zeradas { font-size: 10px; color: #f87171; }
+        /* Luxurious Casino Felt Gradient Background */
+        .felt-table {
+            background: radial-gradient(circle at center, #1e4d2b 0%, #0d2916 70%, #05140a 100%);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+            border: 12px solid #2d1806;
+        }
 
-  /* ---------- TABLE ---------- */
-  #table {
-    position: relative;
-    width: 100%;
-    max-width: 900px;
-    aspect-ratio: 1 / 1;
-    max-height: 620px;
-    background: radial-gradient(circle at center, #2d6a3e 0%, #134d24 70%, #052010 100%);
-    border: 10px solid #3b1f0a;
-    border-radius: 50%;
-    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.85), 0 8px 30px rgba(0, 0, 0, 0.6);
-    margin-bottom: 8px;
-    overflow: hidden;
-  }
+        /* Card flip & shadow dynamics */
+        .card-container {
+            perspective: 1000px;
+        }
 
-  /* ---------- PLAYER SLOTS ---------- */
-  .player-slot {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    z-index: 5;
-  }
-  .player-slot .avatar {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: #1e293b; border: 3px solid #475569;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; transition: 0.2s;
-  }
-  .player-slot.turn .avatar {
-    border-color: #facc15;
-    box-shadow: 0 0 14px rgba(250, 204, 21, 0.7);
-  }
-  .player-slot .label { font-size: 11px; font-weight: 700; color: #cbd5e1; }
-  .player-slot .turn-tag {
-    font-size: 9px; font-weight: 800; color: #000;
-    background: #facc15; padding: 1px 6px; border-radius: 4px;
-    display: none;
-  }
-  .player-slot.turn .turn-tag { display: inline-block; }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
 
-  #slot-0 { bottom: 8px; left: 50%; transform: translateX(-50%); }
-  #slot-1 { top: 8px; left: 8px; }
-  #slot-2 { top: 8px; right: 8px; }
+        .card:hover:not(.disabled) {
+            transform: translateY(-12px) scale(1.05);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.6);
+        }
 
-  /* ---------- HANDS ---------- */
-  .hand { display: flex; gap: 4px; }
-  #slot-0 .hand { margin-bottom: 4px; }
-  #slot-1 .hand, #slot-2 .hand { margin-top: 4px; }
+        /* Pig Snout Motif for Back of Cards */
+        .card-back {
+            background: linear-gradient(135deg, #f472b6 0%, #db2777 100%);
+            border: 2px solid #fbcfe8;
+        }
 
-  /* ---------- CARDS ---------- */
-  .card {
-    width: 46px; height: 66px;
-    border-radius: 6px;
-    background: #f8fafc;
-    border: 2px solid #cbd5e1;
-    display: flex; flex-direction: column;
-    justify-content: space-between;
-    padding: 2px 3px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-    transition: transform 0.15s, box-shadow 0.15s;
-    position: relative;
-    overflow: hidden;
-  }
-  .card.manilha { border-color: #f59e0b; box-shadow: 0 0 0 2px #fbbf24, 0 2px 5px rgba(0, 0, 0, 0.4); }
-  .card .rank { font-size: 12px; font-weight: 800; line-height: 1; }
-  .card .suit { font-size: 20px; text-align: center; line-height: 1; }
-  .card .rank.bottom { text-align: right; transform: rotate(180deg); }
-  .card.red { color: #dc2626; }
-  .card.black { color: #0f172a; }
+        /* Screen Shake for Tapa na Vaca Castigo */
+        @keyframes screenShake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-2px, -2px) rotate(-1deg); }
+            20% { transform: translate(-4px, 0px) rotate(1deg); }
+            30% { transform: translate(4px, 2px) rotate(0deg); }
+            40% { transform: translate(2px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(2px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
 
-  .card.back {
-    background: linear-gradient(135deg, #f472b6 0%, #db2777 100%);
-    border-color: #fbcfe8;
-    color: #fff; font-size: 22px;
-    display: flex; align-items: center; justify-content: center;
-    padding: 0;
-  }
+        .slap-shake {
+            animation: screenShake 0.6s cubic-bezier(.36,.07,.19,.97) both infinite;
+        }
 
-  .card.playable { cursor: pointer; }
-  .card.playable:hover {
-    transform: translateY(-8px) scale(1.06);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
-  }
-  .card.hidden-rank .rank, .card.hidden-rank .suit { visibility: hidden; }
+        /* Slap slap overlay animation */
+        @keyframes handSlap {
+            0% { transform: scale(3) rotate(-30deg); opacity: 0; }
+            50% { transform: scale(1) rotate(0deg); opacity: 1; }
+            70% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
 
-  /* ---------- CENTER ---------- */
-  #center {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 220px; height: 220px;
-    display: flex; align-items: center; justify-content: center;
-  }
+        .slap-animation {
+            animation: handSlap 0.4s ease-out forwards;
+        }
 
-  #deck-area {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-80%, -50%);
-    display: flex; align-items: center;
-    gap: 0;
-    z-index: 3;
-  }
-  #deck-area .card.back {
-    transform: rotate(-8deg);
-    width: 50px; height: 72px;
-  }
-  #vira {
-    width: 50px; height: 72px;
-    margin-left: -8px;
-    transform: rotate(90deg);
-    z-index: 4;
-  }
-
-  /* Played card slots around center */
-  .played-slot {
-    position: absolute;
-    width: 50px; height: 72px;
-    display: flex; align-items: center; justify-content: center;
-    transition: 0.3s;
-  }
-  #played-0 { bottom: 20px; left: 50%; transform: translateX(-50%); }
-  #played-1 { top: 20px; left: 50%; transform: translateX(-50%); }
-  #played-2 { top: 50%; right: 20px; transform: translateY(-50%); }
-
-  @keyframes fadeInCard {
-    from { opacity: 0; transform: scale(0.7) translateY(15px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  .card.played { animation: fadeInCard 0.3s ease-out; }
-
-  /* Trick badge */
-  #trick-badge {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(6, 30, 18, 0.92);
-    border: 1px solid #10b981;
-    color: #fde68a;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 800;
-    white-space: nowrap;
-    z-index: 10;
-    pointer-events: none;
-  }
-
-  /* Escura banner */
-  #escura-banner {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -130px);
-    background: #581c87;
-    color: #e9d5ff;
-    border: 2px solid #c084fc;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 800;
-    z-index: 10;
-    display: none;
-  }
-  #escura-banner.show { display: block; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 50% { opacity: 0.6; } }
-
-  /* ---------- FOOTER / LOG ---------- */
-  #log-area {
-    width: 100%;
-    max-width: 900px;
-    display: flex;
-    gap: 8px;
-    align-items: stretch;
-  }
-  #log {
-    flex: 1;
-    background: rgba(6, 30, 18, 0.9);
-    border: 1px solid #1f4d34;
-    border-radius: 10px;
-    padding: 8px 10px;
-    height: 72px;
-    overflow-y: auto;
-    font-family: monospace;
-    font-size: 11px;
-    line-height: 1.5;
-  }
-  #log::-webkit-scrollbar { width: 5px; }
-  #log::-webkit-scrollbar-thumb { background: #10b981; border-radius: 3px; }
-  #log .l-info { color: #86efac; }
-  #log .l-trick { color: #67e8f9; }
-  #log .l-win { color: #facc15; }
-  #log .l-bust { color: #f87171; }
-
-  #next-btn {
-    min-width: 130px;
-    background: linear-gradient(to right, #facc15, #f59e0b);
-    color: #0f172a;
-    font-weight: 900;
-    border: 2px solid #fde68a;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-    transition: 0.15s;
-  }
-  #next-btn:hover:not(:disabled) { filter: brightness(1.1); transform: scale(1.02); }
-  #next-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  /* ---------- OVERLAYS ---------- */
-  .overlay {
-    position: fixed; inset: 0;
-    background: rgba(0, 0, 0, 0.88);
-    display: none;
-    align-items: center; justify-content: center;
-    z-index: 100;
-    padding: 16px;
-  }
-  .overlay.show { display: flex; }
-  .modal {
-    background: #052010;
-    border: 3px solid #facc15;
-    border-radius: 18px;
-    padding: 24px;
-    max-width: 420px;
-    width: 100%;
-    text-align: center;
-  }
-  .modal h2 { color: #facc15; font-size: 22px; margin-bottom: 12px; }
-  .modal p { color: #d1fae5; font-size: 14px; margin-bottom: 8px; }
-  .modal .final-scores {
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid #1f4d34;
-    border-radius: 10px;
-    padding: 12px;
-    margin: 16px 0;
-    font-size: 13px;
-    text-align: left;
-  }
-  .modal .final-scores div { display: flex; justify-content: space-between; padding: 3px 0; }
-  .modal .final-scores .winner { color: #facc15; font-weight: 800; }
-  .modal button {
-    width: 100%;
-    padding: 12px;
-    background: #facc15; color: #0f172a;
-    border: none; border-radius: 10px;
-    font-weight: 900; font-size: 15px;
-    cursor: pointer; margin-top: 8px;
-  }
-
-  /* Slap overlay */
-  #slap-overlay {
-    background: rgba(80, 0, 0, 0.95);
-    flex-direction: column;
-  }
-  #slap-overlay .modal {
-    background: #1a0000;
-    border-color: #dc2626;
-  }
-  #slap-overlay h2 {
-    color: #ef4444; font-size: 34px;
-    animation: shake 0.6s infinite;
-  }
-  @keyframes shake {
-    0%, 100% { transform: translate(0, 0); }
-    25% { transform: translate(-3px, 2px); }
-    50% { transform: translate(3px, -2px); }
-    75% { transform: translate(-2px, -3px); }
-  }
-  #slap-overlay .hand { font-size: 72px; animation: slapAnim 0.4s ease-out; }
-  @keyframes slapAnim {
-    from { transform: scale(3) rotate(-30deg); opacity: 0; }
-    to { transform: scale(1) rotate(0); opacity: 1; }
-  }
-
-  @media (max-width: 500px) {
-    .card { width: 40px; height: 58px; }
-    .card .rank { font-size: 10px; }
-    .card .suit { font-size: 16px; }
-    #table { border-width: 6px; }
-    .player-slot .avatar { width: 36px; height: 36px; font-size: 18px; }
-  }
-</style>
+        /* Custom scrollbar for logs */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen text-white flex flex-col justify-between p-2 sm:p-4 select-none">
 
-<header>
-  <div>
-    <h1>🐷 TRUCO SOLDADO</h1>
-    <small>Truco do Sul (PR) · 1ª: 3t · 2ª: 2t · 3ª: 1t</small>
-  </div>
-  <div style="display:flex; gap:6px;">
-    <button class="btn" id="rules-btn">📜 Regras</button>
-    <button class="btn reset" id="reset-btn">🔄 Reset</button>
-  </div>
-</header>
+    <!-- TOP BAR / HEADER LOGO AND SOUND CONTROLS -->
+    <header class="w-full max-w-6xl mx-auto flex justify-between items-center bg-emerald-950/80 backdrop-blur border border-emerald-800/50 p-3 rounded-2xl shadow-lg z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-pink-500 flex items-center justify-center text-2xl shadow-inner border border-pink-300">
+                🐷
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold tracking-wide title-font text-yellow-400 drop-shadow">TRUCO SOLDADO</h1>
+                <p class="text-xs text-emerald-300 hidden sm:block">Regra do Sul (Paraná) • 1ª: 3t, 2ª: 2t, 3ª: 1t</p>
+            </div>
+        </div>
 
-<div id="scoreboard">
-  <div class="score-card" id="sc-0">
-    <div class="name">Porco 1 (Você)</div>
-    <div class="tentos" id="tentos-0">0</div>
-    <div class="zeradas">Zeradas: <span id="zeradas-0">0</span></div>
-  </div>
-  <div class="score-card" id="sc-1">
-    <div class="name">Porco 2 (IA 1)</div>
-    <div class="tentos" id="tentos-1">0</div>
-    <div class="zeradas">Zeradas: <span id="zeradas-1">0</span></div>
-  </div>
-  <div class="score-card" id="sc-2">
-    <div class="name">Porco 3 (IA 2)</div>
-    <div class="tentos" id="tentos-2">0</div>
-    <div class="zeradas">Zeradas: <span id="zeradas-2">0</span></div>
-  </div>
-</div>
+        <div class="flex items-center space-x-2">
+            <button id="soundToggleBtn" onclick="toggleAudio()" class="p-2.5 bg-emerald-800 hover:bg-emerald-700 text-yellow-300 rounded-xl transition flex items-center gap-2 text-sm font-semibold border border-emerald-600">
+                <i id="soundIcon" class="fas fa-volume-up"></i>
+                <span class="hidden md:inline" id="soundLabel">Som: On</span>
+            </button>
+            <button onclick="openRulesModal()" class="p-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl transition flex items-center gap-2 text-sm font-semibold border border-amber-400">
+                <i class="fas fa-book-open"></i>
+                <span class="hidden md:inline">Regras</span>
+            </button>
+            <button onclick="confirmResetGame()" class="p-2.5 bg-red-700 hover:bg-red-600 text-white rounded-xl transition flex items-center gap-2 text-sm font-semibold border border-red-500">
+                <i class="fas fa-redo-alt"></i>
+                <span class="hidden md:inline">Reiniciar</span>
+            </button>
+        </div>
+    </header>
 
-<div id="table">
-  <div id="escura-banner">🌑 MÃO NA ESCURA</div>
+    <!-- MAIN GAME AREA (MESA CIRCULAR) -->
+    <main class="w-full max-w-6xl mx-auto my-2 flex-grow flex flex-col justify-center items-center relative">
+        
+        <!-- MESA FELTRO -->
+        <div class="felt-table w-full aspect-[4/3] max-h-[620px] rounded-[40px] sm:rounded-[60px] relative flex flex-col justify-between p-4 sm:p-8 overflow-hidden">
+            
+            <!-- INDICADOR DE ESCURA GLOBAL -->
+            <div id="escuraBadge" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-purple-900/90 text-purple-200 border-2 border-purple-400 px-4 py-1 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider shadow-lg animate-pulse z-20">
+                <i class="fas fa-eye-slash mr-1"></i> Mão na Escura Global!
+            </div>
 
-  <div class="player-slot" id="slot-1">
-    <div class="avatar">🐗</div>
-    <span class="turn-tag">JOGANDO</span>
-    <div class="label">Porco 2</div>
-    <div class="hand" id="hand-1"></div>
-  </div>
+            <!-- PORCO 2 (IA 1 - TOP LEFT) -->
+            <div id="player-container-1" class="absolute top-4 left-4 sm:top-8 sm:left-12 flex flex-col items-center z-10 transition-all duration-300">
+                <div class="relative">
+                    <div id="avatar-1" class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-800 border-4 border-slate-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg">
+                        🐗
+                    </div>
+                    <span id="turn-badge-1" class="hidden absolute -bottom-1 -right-1 bg-yellow-400 text-black text-xs font-black px-1.5 py-0.5 rounded-full border border-black animate-bounce">JOGANDO</span>
+                </div>
+                <span class="font-bold text-xs sm:text-sm mt-1 text-slate-200">Porco 2 (IA 1)</span>
+                <div class="flex gap-1 text-xs font-semibold bg-black/50 px-2 py-0.5 rounded-full mt-0.5 border border-white/10">
+                    <span class="text-yellow-400"><i class="fas fa-star text-xs"></i> <span id="score-1">0</span></span>
+                    <span class="text-slate-400">|</span>
+                    <span class="text-red-400" title="Zeradas/Estouros"><i class="fas fa-skull text-xs"></i> <span id="resets-1">0</span></span>
+                </div>
+                <!-- IA 1 Cards -->
+                <div id="hand-1" class="flex -space-x-4 mt-2"></div>
+            </div>
 
-  <div class="player-slot" id="slot-2">
-    <div class="avatar">🐷</div>
-    <span class="turn-tag">JOGANDO</span>
-    <div class="label">Porco 3</div>
-    <div class="hand" id="hand-2"></div>
-  </div>
+            <!-- PORCO 3 (IA 2 - TOP RIGHT) -->
+            <div id="player-container-2" class="absolute top-4 right-4 sm:top-8 sm:right-12 flex flex-col items-center z-10 transition-all duration-300">
+                <div class="relative">
+                    <div id="avatar-2" class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-800 border-4 border-slate-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg">
+                        🐷
+                    </div>
+                    <span id="turn-badge-2" class="hidden absolute -bottom-1 -right-1 bg-yellow-400 text-black text-xs font-black px-1.5 py-0.5 rounded-full border border-black animate-bounce">JOGANDO</span>
+                </div>
+                <span class="font-bold text-xs sm:text-sm mt-1 text-slate-200">Porco 3 (IA 2)</span>
+                <div class="flex gap-1 text-xs font-semibold bg-black/50 px-2 py-0.5 rounded-full mt-0.5 border border-white/10">
+                    <span class="text-yellow-400"><i class="fas fa-star text-xs"></i> <span id="score-2">0</span></span>
+                    <span class="text-slate-400">|</span>
+                    <span class="text-red-400" title="Zeradas/Estouros"><i class="fas fa-skull text-xs"></i> <span id="resets-2">0</span></span>
+                </div>
+                <!-- IA 2 Cards -->
+                <div id="hand-2" class="flex -space-x-4 mt-2"></div>
+            </div>
 
-  <div class="player-slot" id="slot-0">
-    <div class="hand" id="hand-0"></div>
-    <div class="avatar">👑</div>
-    <span class="turn-tag">SUA VEZ</span>
-    <div class="label">Porco 1</div>
-  </div>
+            <!-- CENTRO DA MESA: VIRA, DECK E CARTAS JOGADAS NA VAZA -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                
+                <!-- DECK E VIRA (Lado Esquerdo do Centro) -->
+                <div class="absolute left-[20%] sm:left-[30%] flex items-center -space-x-8 pointer-events-auto">
+                    <!-- Deck virado -->
+                    <div class="w-12 h-18 sm:w-16 sm:h-24 card-back rounded-lg border-2 border-white/30 flex items-center justify-center text-xl shadow-2xl transform -rotate-6">
+                        🐷
+                    </div>
+                    <!-- Carta Vira (Virada para cima, 90 deg) -->
+                    <div id="viraCardContainer" class="w-12 h-18 sm:w-16 sm:h-24 bg-white rounded-lg border-2 border-amber-400 flex flex-col justify-between p-1 shadow-2xl transform rotate-90 translate-x-4">
+                        <span id="viraTopRank" class="text-xs font-bold leading-none"></span>
+                        <span id="viraCenterSuit" class="text-center text-lg sm:text-xl leading-none"></span>
+                        <span id="viraBottomRank" class="text-xs font-bold leading-none text-right"></span>
+                    </div>
+                </div>
 
-  <div id="center">
-    <div id="deck-area">
-      <div class="card back">🐷</div>
-      <div class="card" id="vira">
-        <span class="rank" id="vira-rank"></span>
-        <span class="suit" id="vira-suit"></span>
-        <span class="rank bottom" id="vira-rank-b"></span>
-      </div>
+                <!-- ÁREA DE VAZA ATUAL (Cartas jogadas no centro) -->
+                <div class="relative w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center">
+                    <!-- Status Vaza Atualmente -->
+                    <div id="trickInfoBadge" class="absolute top-0 bg-emerald-900/90 border border-emerald-500 text-yellow-300 text-[10px] sm:text-xs font-extrabold px-3 py-1 rounded-full shadow">
+                        VAZA 1: VALE 3 TENTOS
+                    </div>
+
+                    <!-- Carta Jogada Porco 1 (Humano - Bottom) -->
+                    <div id="played-card-0" class="absolute bottom-2 transition-all duration-500 transform scale-90 sm:scale-100"></div>
+
+                    <!-- Carta Jogada Porco 2 (IA 1 - Top Left) -->
+                    <div id="played-card-1" class="absolute top-4 left-2 transition-all duration-500 transform scale-90 sm:scale-100"></div>
+
+                    <!-- Carta Jogada Porco 3 (IA 2 - Top Right) -->
+                    <div id="played-card-2" class="absolute top-4 right-2 transition-all duration-500 transform scale-90 sm:scale-100"></div>
+                </div>
+            </div>
+
+            <!-- HUMANO (PORCO 1 - BOTTOM CENTER) -->
+            <div id="player-container-0" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center z-20 transition-all duration-300">
+                <!-- Cartas do Humano -->
+                <div id="hand-0" class="flex -space-x-3 sm:-space-x-2 mb-2 pointer-events-auto"></div>
+
+                <div class="flex items-center gap-3 bg-slate-900/90 border-2 border-emerald-500/50 px-4 py-1.5 rounded-2xl shadow-xl">
+                    <div class="relative">
+                        <div id="avatar-0" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-700 border-2 border-emerald-400 flex items-center justify-center text-xl sm:text-2xl">
+                            👑
+                        </div>
+                        <span id="turn-badge-0" class="hidden absolute -bottom-1 -right-1 bg-yellow-400 text-black text-[10px] font-black px-1 rounded-full border border-black animate-bounce">SUA VEZ</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-xs sm:text-sm text-yellow-300">Porco 1 (Você)</span>
+                            <span id="escuraTag0" class="hidden text-[10px] bg-purple-700 px-1.5 py-0.5 rounded text-purple-200 font-bold">ESCURA</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs font-semibold text-slate-300">
+                            <span>Tentos: <b id="score-0" class="text-yellow-400 text-sm sm:text-base">0</b>/12</span>
+                            <span>Estouros: <b id="resets-0" class="text-red-400">0</b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER / LOG DE EVENTOS & BOTÃO PRÓXIMA MÃO -->
+    <footer class="w-full max-w-6xl mx-auto flex flex-col sm:flex-row gap-3 items-stretch justify-between z-10">
+        <!-- Log de Eventos -->
+        <div id="gameLog" class="flex-grow bg-emerald-950/90 border border-emerald-800/60 rounded-xl p-2.5 h-20 overflow-y-auto text-xs font-mono text-emerald-200 shadow-inner">
+            <div class="text-emerald-400 font-bold mb-1"><i class="fas fa-terminal mr-1"></i> Histórico de Jogo:</div>
+            <div id="logContent">Iniciando a partida de Truco Soldado...</div>
+        </div>
+
+        <!-- Botão Ação Próxima Mão / Iniciar -->
+        <div class="flex items-center justify-center sm:w-48">
+            <button id="nextHandBtn" onclick="startNewHand()" class="w-full h-full min-h-[50px] bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black text-sm sm:text-base rounded-xl transition shadow-lg border-2 border-yellow-300 flex items-center justify-center gap-2 transform active:scale-95">
+                <i class="fas fa-play"></i> NOVA MÃO
+            </button>
+        </div>
+    </footer>
+
+    <!-- MODAL DE REGRAS -->
+    <div id="rulesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border-2 border-amber-500 rounded-3xl max-w-lg w-full p-6 text-slate-200 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <button onclick="closeRulesModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-2xl font-bold title-font text-yellow-400 mb-4 flex items-center gap-2">
+                <i class="fas fa-scroll"></i> Regras: Truco Soldado (PR)
+            </h2>
+            <div class="space-y-3 text-xs sm:text-sm leading-relaxed">
+                <p><b class="text-amber-300">1. Cartas e Manilha:</b> Sequência de força normal: 4 &lt; 5 &lt; 6 &lt; 7 &lt; Q &lt; J &lt; K &lt; 2 &lt; 3. A manilha é a carta superior à Vira na sequência. Desempate entre manilhas por naipe: Ouros &lt; Espadas &lt; Copas &lt; Paus.</p>
+                <p><b class="text-amber-300">2. Pontos por Vaza:</b> 1ª vaza vale <span class="text-yellow-400 font-bold">3 tentos</span>, 2ª vaza vale <span class="text-yellow-400 font-bold">2 tentos</span> e 3ª vaza vale <span class="text-yellow-400 font-bold">1 tento</span>. Os pontos entram IMEDIATAMENTE para quem ganhar a vaza.</p>
+                <p><b class="text-amber-300">3. Estouro e Vitória:</b> 
+                    <br>• Se a soma atingir <b class="text-red-400">13 ou mais</b>, o jogador <b class="text-red-400">ESTOURA</b> na hora, sua pontuação ZERA e leva +1 Zerada.
+                    <br>• Quem cravou <b class="text-green-400">EXATAMENTE 12</b> vence! A mão encerra normalmente antes da declaração do campeão.
+                </p>
+                <p><b class="text-amber-300">4. A Escura:</b> 
+                    <br>• <b>Escura Individual:</b> Jogador com 11 tentos joga no escuro.
+                    <br>• <b>Escura Global:</b> Se todos tiverem os mesmos tentos (&gt;0), a mão é no escuro para todos.
+                </p>
+                <p><b class="text-amber-300">5. Castigo (Tapa na Vaca):</b> Se o vencedor cravou 12 tentos e algum perdedor terminou a partida com <b class="text-red-400">EXATAMENTE 0 tentos</b>, ele toma o TAPA NA VACA no final!</p>
+            </div>
+            <button onclick="closeRulesModal()" class="mt-6 w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition">Entendido!</button>
+        </div>
     </div>
 
-    <div class="played-slot" id="played-0"></div>
-    <div class="played-slot" id="played-1"></div>
-    <div class="played-slot" id="played-2"></div>
-
-    <div id="trick-badge">VAZA 1 · 3 TENTOS</div>
-  </div>
-</div>
-
-<div id="log-area">
-  <div id="log"></div>
-  <button id="next-btn" disabled>▶ NOVA MÃO</button>
-</div>
-
-<!-- VICTORY OVERLAY -->
-<div class="overlay" id="victory-overlay">
-  <div class="modal">
-    <h2 id="victory-title">🏆 VITÓRIA!</h2>
-    <p id="victory-subtitle"></p>
-    <div class="final-scores" id="final-scores"></div>
-    <button onclick="Game.resetFull()">JOGAR NOVAMENTE</button>
-  </div>
-</div>
-
-<!-- SLAP OVERLAY -->
-<div class="overlay" id="slap-overlay">
-  <div class="modal">
-    <div class="hand">👋🐮</div>
-    <h2>TAPA NA VACA!</h2>
-    <p id="slap-text"></p>
-    <button onclick="Game.closeSlap()">Continuar</button>
-  </div>
-</div>
-
-<!-- RULES MODAL -->
-<div class="overlay" id="rules-overlay">
-  <div class="modal" style="max-width:560px; text-align:left;">
-    <h2 style="text-align:center;">📜 Regras</h2>
-    <div style="color:#d1fae5; font-size:13px; line-height:1.6;">
-      <p><b style="color:#fbbf24;">Baralho:</b> 40 cartas espanholas. Força: 4 &lt; 5 &lt; 6 &lt; 7 &lt; Q &lt; J &lt; K &lt; A &lt; 2 &lt; 3.</p>
-      <p><b style="color:#fbbf24;">Manilha:</b> carta seguinte à Vira na sequência. Qualquer manilha &gt; carta normal. Desempate: Ouros &lt; Espadas &lt; Copas &lt; Paus.</p>
-      <p><b style="color:#fbbf24;">Vazas:</b> 1ª = 3 tentos, 2ª = 2, 3ª = 1. Aplicado imediatamente. Empate = ninguém pontua.</p>
-      <p><b style="color:#fbbf24;">Estouro:</b> se a soma ≥ 13, zera na hora e continua.</p>
-      <p><b style="color:#fbbf24;">Vitória:</b> cravar exatamente 12 ao final da mão.</p>
-      <p><b style="color:#fbbf24;">Escura:</b> individual em 11, global se todos iguais (&gt;0).</p>
-      <p><b style="color:#fbbf24;">Castigo:</b> perdedor com 0 tentos ao fim da partida leva Tapa na Vaca.</p>
+    <!-- OVERLAY CASTIGO TAPA NA VACA -->
+    <div id="slapOverlay" class="fixed inset-0 bg-red-950/90 z-50 flex flex-col items-center justify-center hidden pointer-events-auto">
+        <div class="text-center p-6 bg-black/70 border-4 border-red-600 rounded-3xl max-w-md w-11/12 shadow-2xl relative overflow-hidden">
+            <div id="slapHandIcon" class="text-8xl my-4 slap-animation">👋🐮</div>
+            <h1 class="text-3xl sm:text-4xl font-extrabold title-font text-red-500 animate-pulse tracking-widest">TAPA NA VACA!</h1>
+            <p id="slapTargetText" class="text-lg text-yellow-300 font-bold mt-2">Porco 2 terminou com 0 tentos!</p>
+            <p class="text-xs text-slate-300 mt-1">Castigo por terminar a partida zerado!</p>
+            <button onclick="closeSlapOverlay()" class="mt-6 px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-lg rounded-2xl shadow-lg border-2 border-red-300 transition transform hover:scale-105">
+                Continuar
+            </button>
+        </div>
     </div>
-    <button onclick="document.getElementById('rules-overlay').classList.remove('show')">Entendido</button>
-  </div>
-</div>
-
-<script>
-/* =========================================================================
-   TRUCO SOLDADO — ENGINE
-   ========================================================================= */
-(function() {
-'use strict';
-
-/* ---------- CONSTANTES ---------- */
-// Sequência do Truco do Sul COM A (10 cartas)
-const RANK_ORDER = ['4','5','6','7','Q','J','K','A','2','3'];
-
-const SUITS = [
-  { key:'ouros',   symbol:'♦', color:'red',   power:1 },
-  { key:'espadas', symbol:'♠', color:'black', power:2 },
-  { key:'copas',   symbol:'♥', color:'red',   power:3 },
-  { key:'paus',    symbol:'♣', color:'black', power:4 }
-];
-
-const TRICK_POINTS = [3, 2, 1];
-const PLAYER_NAMES = ['Porco 1 (Você)', 'Porco 2 (IA 1)', 'Porco 3 (IA 2)'];
-const PLAYER_EMOJI = ['👑', '🐗', '🐷'];
-
-/* ---------- STATE ---------- */
-const G = {
-  tentos: [0,0,0],
-  zeradas: [0,0,0],
-  handNum: 0,
-  starter: 0,        // quem começa a mão
-  turn: 0,           // de quem é a vez
-
-  vira: null,
-  manilhaRank: null,
-  hands: [[],[],[]],
-  // Cartas na vaza atual: array de {player, card}
-  trickCards: [],
-  trickIndex: 0,     // 0,1,2
-
-  escuraIndividual: [false,false,false],
-  escuraGlobal: false,
-
-  matchActive: false,
-  processing: false,
-  // snapshot do placar ao final da mão (para decidir castigo)
-  lastTrickWinner: null
-};
-
-/* ---------- UTILITÁRIOS ---------- */
-function buildDeck() {
-  const deck = [];
-  for (const r of RANK_ORDER) {
-    for (const s of SUITS) {
-      deck.push({ rank:r, suit:s, id: r+'-'+s.key });
-    }
-  }
-  return deck;
-}
-
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function getManilhaRank(viraRank) {
-  const idx = RANK_ORDER.indexOf(viraRank);
-  return RANK_ORDER[(idx + 1) % RANK_ORDER.length];
-}
-
-// Força: manilhas = 100 + suit.power (101-104); normais = index (0-9)
-function cardStrength(card, manilhaRank) {
-  if (card.rank === manilhaRank) return 100 + card.suit.power;
-  return RANK_ORDER.indexOf(card.rank);
-}
-
-function isManilha(card, manilhaRank) {
-  return card.rank === manilhaRank;
-}
-
-/* ---------- LOG ---------- */
-function log(msg, type='info') {
-  const el = document.getElementById('log');
-  const div = document.createElement('div');
-  div.className = 'l-' + type;
-  div.textContent = msg;
-  el.appendChild(div);
-  el.scrollTop = el.scrollHeight;
-}
-
-/* =========================================================================
-   CONTROLE DE FLUXO
-   ========================================================================= */
-
-function resetFull() {
-  document.getElementById('victory-overlay').classList.remove('show');
-  document.getElementById('slap-overlay').classList.remove('show');
-  G.tentos = [0,0,0];
-  G.zeradas = [0,0,0];
-  G.handNum = 0;
-  G.starter = 0;
-  G.matchActive = true;
-  G.processing = false;
-  document.getElementById('log').innerHTML = '';
-  log('Nova partida iniciada!', 'win');
-  startNewHand();
-}
-
-function startNewHand() {
-  if (!G.matchActive) return;
-  if (G.processing) return;
-
-  G.handNum++;
-
-  // 1) Distribuição
-  const deck = shuffle(buildDeck());
-  G.vira = deck.pop();
-  G.manilhaRank = getManilhaRank(G.vira.rank);
-  G.hands = [
-    [deck.pop(), deck.pop(), deck.pop()],
-    [deck.pop(), deck.pop(), deck.pop()],
-    [deck.pop(), deck.pop(), deck.pop()]
-  ];
-
-  // 2) Escura
-  G.escuraIndividual = G.tentos.map(t => t === 11);
-  G.escuraGlobal = (G.tentos[0] === G.tentos[1] &&
-                    G.tentos[1] === G.tentos[2] &&
-                    G.tentos[0] > 0 &&
-                    G.tentos[0] < 12);
-
-  // 3) Estado da mão
-  G.trickIndex = 0;
-  G.trickCards = [];
-  G.turn = G.starter;
-  G.processing = false;
-
-  log(`--- Mão ${G.handNum} --- Vira: ${G.vira.rank}${G.vira.suit.symbol} · Manilha: ${G.manilhaRank}`, 'trick');
-
-  if (G.escuraGlobal) {
-    log('🌑 MÃO NA ESCURA GLOBAL (todos empatados)', 'win');
-  } else {
-    for (let i = 0; i < 3; i++) {
-      if (G.escuraIndividual[i]) {
-        log(`🌑 ${PLAYER_NAMES[i]} está na ESCURA (11 tentos)`, 'win');
-      }
-    }
-  }
-
-  renderAll();
-  updateTurnUI();
-
-  // Se o starter é IA, ela joga
-  if (G.turn !== 0) scheduleAI();
-}
-
-/* ---------- JOGAR CARTA ---------- */
-function playCard(player, cardIndex) {
-  if (!G.matchActive || G.processing) return;
-  if (player !== G.turn) return;
-  const hand = G.hands[player];
-  if (cardIndex < 0 || cardIndex >= hand.length) return;
-
-  const card = hand.splice(cardIndex, 1)[0];
-  G.trickCards.push({ player, card });
-
-  // Revela carta na mesa (mesmo se estava escondida por escura)
-  renderPlayed(player, card);
-
-  // Log: se estava na escura, revelar agora
-  const wasEscura = G.escuraGlobal || G.escuraIndividual[player];
-  const reveal = wasEscura ? ' (revelada da escura)' : '';
-  log(`${PLAYER_NAMES[player]} jogou ${card.rank}${card.suit.symbol}${reveal}`, 'info');
-
-  renderHand(player);
-
-  if (G.trickCards.length === 3) {
-    G.processing = true;
-    setTimeout(resolveTrick, 900);
-  } else {
-    G.turn = (G.turn + 1) % 3;
-    updateTurnUI();
-    if (G.turn !== 0) scheduleAI();
-  }
-}
-
-/* ---------- RESOLVER VAZA ---------- */
-function resolveTrick() {
-  const trickNum = G.trickIndex + 1;
-  const points = TRICK_POINTS[G.trickIndex];
-
-  // Calcular maior força
-  let maxStr = -1;
-  let winners = [];
-  for (const { player, card } of G.trickCards) {
-    const s = cardStrength(card, G.manilhaRank);
-    if (s > maxStr) { maxStr = s; winners = [player]; }
-    else if (s === maxStr) { winners.push(player); }
-  }
-
-  if (winners.length > 1) {
-    log(`Vaza ${trickNum}: EMPATE — ninguém pontua.`, 'trick');
-  } else {
-    const w = winners[0];
-    log(`Vaza ${trickNum} → ${PLAYER_NAMES[w]} ganha +${points} tento(s)`, 'win');
-
-    // 4) SOMA IMEDIATA
-    G.tentos[w] += points;
-
-    // 5) ESTOURO IMEDIATO
-    if (G.tentos[w] >= 13) {
-      log(`💥 ESTOURO! ${PLAYER_NAMES[w]} atingiu ${G.tentos[w]} e voltou a 0.`, 'bust');
-      G.tentos[w] = 0;
-      G.zeradas[w]++;
-    }
-  }
-
-  updateScoreboard();
-  G.trickIndex++;
-
-  // Próxima vaza ou fim de mão
-  setTimeout(() => {
-    clearPlayedUI();
-    G.trickCards = [];
-
-    if (G.trickIndex < 3) {
-      // Quem ganhou a vaza começa a próxima. Se empate, mantém o starter.
-      if (winners.length === 1) {
-        G.turn = winners[0];
-      } else {
-        G.turn = G.starter;
-      }
-      G.processing = false;
-      updateTrickBadge();
-      updateTurnUI();
-      if (G.turn !== 0) scheduleAI();
-    } else {
-      finishHand();
-    }
-  }, 950);
-}
-
-/* ---------- FIM DA MÃO ---------- */
-function finishHand() {
-  G.processing = false;
-  G.trickIndex = 0;
-
-  // Verifica quem cravou 12
-  const winners = [];
-  for (let i = 0; i < 3; i++) {
-    if (G.tentos[i] === 12) winners.push(i);
-  }
-
-  if (winners.length > 0) {
-    // Fim de partida
-    G.matchActive = false;
-    endMatch(winners[0]);
-  } else {
-    // Rotaciona starter
-    G.starter = (G.starter + 1) % 3;
-    document.getElementById('next-btn').disabled = false;
-    log('Mão encerrada. Clique em NOVA MÃO.', 'info');
-  }
-
-  updateScoreboard();
-}
-
-/* ---------- FIM DE PARTIDA ---------- */
-function endMatch(winnerId) {
-  log(`🏆 ${PLAYER_NAMES[winnerId]} CRAVOU 12 E VENCEU A PARTIDA!`, 'win');
-
-  // Verifica castigo: perdedores com 0 tentos
-  const punished = [];
-  for (let i = 0; i < 3; i++) {
-    if (i !== winnerId && G.tentos[i] === 0) punished.push(i);
-  }
-
-  if (punished.length > 0) {
-    showSlap(punished, winnerId);
-  } else {
-    showVictory(winnerId);
-  }
-}
-
-function showSlap(punishedIds, winnerId) {
-  const names = punishedIds.map(i => PLAYER_NAMES[i]).join(' e ');
-  document.getElementById('slap-text').textContent =
-    `${names} terminou com 0 tentos e levou o Tapa na Vaca!`;
-  document.getElementById('slap-overlay').classList.add('show');
-  document.getElementById('slap-overlay').dataset.winner = winnerId;
-}
-
-function closeSlap() {
-  document.getElementById('slap-overlay').classList.remove('show');
-  const winner = parseInt(document.getElementById('slap-overlay').dataset.winner, 10);
-  showVictory(winner);
-}
-
-function showVictory(winnerId) {
-  document.getElementById('victory-title').textContent = '🏆 ' + PLAYER_NAMES[winnerId].toUpperCase();
-  document.getElementById('victory-subtitle').textContent = 'Cravou 12 tentos!';
-
-  const fs = document.getElementById('final-scores');
-  fs.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
-    const row = document.createElement('div');
-    if (i === winnerId) row.className = 'winner';
-    row.innerHTML = `<span>${PLAYER_NAMES[i]}</span><span>${G.tentos[i]} tentos · ${G.zeradas[i]} zeradas</span>`;
-    fs.appendChild(row);
-  }
-  document.getElementById('victory-overlay').classList.add('show');
-}
-
-/* =========================================================================
-   IA
-   ========================================================================= */
-
-function scheduleAI() {
-  if (G.turn === 0) return;
-  setTimeout(() => executeAI(G.turn), 750);
-}
-
-function executeAI(player) {
-  if (!G.matchActive || G.processing) return;
-  if (G.turn !== player) return;
-  const hand = G.hands[player];
-  if (!hand.length) return;
-
-  const escura = G.escuraGlobal || G.escuraIndividual[player];
-  let idx;
-
-  if (escura) {
-    // Escolha cega
-    idx = Math.floor(Math.random() * hand.length);
-  } else {
-    idx = chooseCardAI(player, hand);
-  }
-
-  playCard(player, idx);
-}
-
-function chooseCardAI(player, hand) {
-  const manilha = G.manilhaRank;
-  // Avalia força de cada carta
-  const evaluated = hand.map((c, i) => ({ i, c, s: cardStrength(c, manilha) }));
-  evaluated.sort((a, b) => a.s - b.s); // menor → maior
-
-  const played = G.trickCards;
-
-  // Primeiro a jogar → carta mais fraca
-  if (played.length === 0) {
-    return evaluated[0].i;
-  }
-
-  // Maior força na mesa
-  let maxTable = -1;
-  let leader = -1;
-  for (const { player: p, card } of played) {
-    const s = cardStrength(card, manilha);
-    if (s > maxTable) { maxTable = s; leader = p; }
-  }
-
-  // COALIZÃO: se o líder é "alvo" (8 a 11 tentos) e a IA é a 2ª a jogar,
-  // jogar carta fraca DE PROPÓSITO para abrir espaço para o 3º roubar.
-  const leaderIsTarget = (leader !== -1) &&
-    G.tentos[leader] >= 8 && G.tentos[leader] <= 11;
-
-  if (played.length === 1 && leaderIsTarget) {
-    // Escolhe a MAIS FRACA (mesmo que pudesse vencer)
-    return evaluated[0].i;
-  }
-
-  // Jogo normal: menor carta que supere a mesa
-  const winners = evaluated.filter(e => e.s > maxTable);
-  if (winners.length > 0) return winners[0].i;
-
-  // Não dá para vencer: descarta a mais fraca
-  return evaluated[0].i;
-}
-
-/* =========================================================================
-   RENDERIZAÇÃO
-   ========================================================================= */
-
-function renderAll() {
-  renderVira();
-  for (let i = 0; i < 3; i++) renderHand(i);
-  clearPlayedUI();
-  updateTrickBadge();
-  updateScoreboard();
-  updateEscuraBanner();
-}
-
-function renderVira() {
-  const v = G.vira;
-  const rankEl = document.getElementById('vira-rank');
-  const rankElB = document.getElementById('vira-rank-b');
-  const suitEl = document.getElementById('vira-suit');
-  const cardEl = document.getElementById('vira');
-
-  rankEl.textContent = v.rank;
-  rankElB.textContent = v.rank;
-  suitEl.textContent = v.suit.symbol;
-
-  cardEl.classList.remove('red','black');
-  cardEl.classList.add(v.suit.color);
-}
-
-function renderHand(player) {
-  const container = document.getElementById('hand-' + player);
-  container.innerHTML = '';
-  const hand = G.hands[player];
-  const escura = G.escuraGlobal || G.escuraIndividual[player];
-  const canPlay = (player === 0) && (G.turn === 0) && !G.processing && G.matchActive;
-
-  hand.forEach((card, i) => {
-    const el = document.createElement('div');
-
-    if (player === 0) {
-      if (escura) {
-        // Carta virada (não vê)
-        el.className = 'card back';
-        el.textContent = '🐷';
-      } else {
-        el.className = 'card';
-        if (isManilha(card, G.manilhaRank)) el.classList.add('manilha');
-        el.classList.add(card.suit.color);
-        el.innerHTML = `
-          <span class="rank">${card.rank}</span>
-          <span class="suit">${card.suit.symbol}</span>
-          <span class="rank bottom">${card.rank}</span>`;
-      }
-      if (canPlay) {
-        el.classList.add('playable');
-        el.addEventListener('click', () => playCard(0, i));
-      }
-    } else {
-      // IA: verso sempre
-      el.className = 'card back';
-      el.textContent = '🐷';
-    }
-    container.appendChild(el);
-  });
-}
-
-function renderPlayed(player, card) {
-  const slot = document.getElementById('played-' + player);
-  slot.innerHTML = '';
-  const el = document.createElement('div');
-  el.className = 'card played';
-  if (isManilha(card, G.manilhaRank)) el.classList.add('manilha');
-  el.classList.add(card.suit.color);
-  el.innerHTML = `
-    <span class="rank">${card.rank}</span>
-    <span class="suit">${card.suit.symbol}</span>
-    <span class="rank bottom">${card.rank}</span>`;
-  slot.appendChild(el);
-}
-
-function clearPlayedUI() {
-  for (let i = 0; i < 3; i++) {
-    document.getElementById('played-' + i).innerHTML = '';
-  }
-}
-
-function updateTrickBadge() {
-  const el = document.getElementById('trick-badge');
-  if (G.trickIndex >= 3) {
-    el.textContent = 'MÃO ENCERRADA';
-    return;
-  }
-  const pts = TRICK_POINTS[G.trickIndex];
-  el.textContent = `VAZA ${G.trickIndex + 1} · ${pts} TENTO${pts > 1 ? 'S' : ''}`;
-}
-
-function updateTurnUI() {
-  for (let i = 0; i < 3; i++) {
-    document.getElementById('slot-' + i).classList.toggle('turn', i === G.turn);
-    document.getElementById('sc-' + i).classList.toggle('active', i === G.turn);
-  }
-  // Re-renderiza a mão do humano para atualizar clicabilidade
-  renderHand(0);
-}
-
-function updateScoreboard() {
-  for (let i = 0; i < 3; i++) {
-    document.getElementById('tentos-' + i).textContent = G.tentos[i];
-    document.getElementById('zeradas-' + i).textContent = G.zeradas[i];
-  }
-}
-
-function updateEscuraBanner() {
-  const banner = document.getElementById('escura-banner');
-  if (G.escuraGlobal) {
-    banner.textContent = '🌑 MÃO NA ESCURA GLOBAL';
-    banner.classList.add('show');
-  } else {
-    const anyInd = G.escuraIndividual.some(v => v);
-    if (anyInd) {
-      const names = [];
-      for (let i = 0; i < 3; i++) if (G.escuraIndividual[i]) names.push(PLAYER_NAMES[i]);
-      banner.textContent = '🌑 ESCURA: ' + names.join(', ');
-      banner.classList.add('show');
-    } else {
-      banner.classList.remove('show');
-    }
-  }
-}
-
-/* =========================================================================
-   EXPOR
-   ========================================================================= */
-window.Game = {
-  resetFull,
-  closeSlap,
-  startNewHand,
-  playCard
-};
-
-/* ---------- BINDINGS ---------- */
-document.getElementById('reset-btn').addEventListener('click', () => {
-  if (confirm('Reiniciar a partida? Todos os pontos serão zerados.')) resetFull();
-});
-document.getElementById('rules-btn').addEventListener('click', () => {
-  document.getElementById('rules-overlay').classList.add('show');
-});
-document.getElementById('next-btn').addEventListener('click', () => {
-  document.getElementById('next-btn').disabled = true;
-  startNewHand();
-});
-document.getElementById('rules-overlay').addEventListener('click', (e) => {
-  if (e.target.id === 'rules-overlay') e.target.classList.remove('show');
-});
-
-/* ---------- START ---------- */
-resetFull();
-
-})();
-</script>
+
+    <!-- OVERLAY VITORIA DA PARTIDA -->
+    <div id="victoryOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-md z-40 flex flex-col items-center justify-center hidden">
+        <div class="text-center p-8 bg-emerald-950 border-4 border-yellow-400 rounded-3xl max-w-md w-11/12 shadow-2xl">
+            <div id="victoryIcon" class="text-7xl mb-2">🏆</div>
+            <h2 id="victoryTitle" class="text-3xl font-black title-font text-yellow-400">GRANDE VENCEDOR!</h2>
+            <p id="victorySubtitle" class="text-lg text-emerald-200 mt-2 font-semibold">Porco 1 cravou 12 tentos!</p>
+            
+            <div class="my-6 bg-black/40 p-4 rounded-xl text-left text-xs space-y-2 border border-emerald-800">
+                <div class="font-bold text-yellow-300 mb-1 border-b border-emerald-700 pb-1">PLACAR FINAL:</div>
+                <div class="flex justify-between"><span>Porco 1 (Você):</span><span id="finalScore0" class="font-bold text-yellow-400">0</span></div>
+                <div class="flex justify-between"><span>Porco 2 (IA 1):</span><span id="finalScore1" class="font-bold text-yellow-400">0</span></div>
+                <div class="flex justify-between"><span>Porco 3 (IA 2):</span><span id="finalScore2" class="font-bold text-yellow-400">0</span></div>
+            </div>
+
+            <button onclick="resetGame()" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-lg rounded-2xl shadow-xl transition transform hover:scale-105">
+                JOGAR NOVAMENTE
+            </button>
+        </div>
+    </div>
+
+    <!-- AUDIO SYNTHESIZER (WEB AUDIO API) -->
+    <script>
+        // Sound System utilizing browser Web Audio API to prevent external file load failures
+        class SoundSystem {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+            }
+
+            playCard() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playBust() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.3);
+
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playSlap() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                // Noise buffer for realistic slap sound
+                const bufferSize = this.ctx.sampleRate * 0.2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.2);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start();
+            }
+
+            playWin() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.25);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(this.ctx.currentTime + idx * 0.1);
+                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.25);
+                });
+            }
+        }
+
+        const soundSystem = new SoundSystem();
+
+        function toggleAudio() {
+            soundSystem.enabled = !soundSystem.enabled;
+            document.getElementById('soundLabel').innerText = soundSystem.enabled ? 'Som: On' : 'Som: Off';
+            document.getElementById('soundIcon').className = soundSystem.enabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+        }
+    </script>
+
+    <!-- TRUCO SOLDADO ENGINE LOGIC -->
+    <script>
+        /* ==========================================================================
+           1. CONSTANTS AND GAME CONFIGURATION
+           ========================================================================== */
+        // Base ranks in Truco do Sul order: 4 < 5 < 6 < 7 < Q < J < K < 2 < 3
+        const RANK_ORDER = ['4', '5', '6', '7', 'Q', 'J', 'K', '2', '3'];
+        
+        // Suits and suit hierarchy for Manilha tie-breaker: Ouros (1) < Espadas (2) < Copas (3) < Paus (4)
+        const SUITS = [
+            { name: 'Ouros', symbol: '♦', color: 'text-red-600', power: 1 },
+            { name: 'Espadas', symbol: '♠', color: 'text-slate-900', power: 2 },
+            { name: 'Copas', symbol: '♥', color: 'text-red-600', power: 3 },
+            { name: 'Paus', symbol: '♣', color: 'text-slate-900', power: 4 }
+        ];
+
+        // Points awarded for winning trick 1, 2, and 3
+        const TRICK_POINTS = [3, 2, 1];
+
+        // Players: 0 = Human (Porco 1), 1 = IA 1 (Porco 2), 2 = IA 2 (Porco 3)
+        const PLAYERS = [
+            { id: 0, name: 'Porco 1 (Você)', isAI: false },
+            { id: 1, name: 'Porco 2 (IA 1)', isAI: true },
+            { id: 2, name: 'Porco 3 (IA 2)', isAI: true }
+        ];
+
+        /* ==========================================================================
+           2. GLOBAL GAME STATE
+           ========================================================================== */
+        let gameState = {
+            scores: [0, 0, 0],       // Tentos accumulated by each player
+            resets: [0, 0, 0],       // Count of busts / resets to 0
+            handsPlayed: 0,
+            
+            // Hand specific state
+            deck: [],
+            vira: null,
+            manilhaRank: null,
+            playerHands: [[], [], []],
+            
+            // Current trick state
+            currentTrick: 0,         // 0, 1, or 2
+            starterPlayer: 0,        // Who starts the hand/trick
+            turnPlayer: 0,           // Whose turn it currently is
+            trickPlayedCards: [],    // Cards played in current trick: { playerId, card }
+            trickWinners: [],        // Player ID who won each trick (or null if tied)
+            
+            // Escura Flags
+            isGlobalEscura: false,
+            individualEscura: [false, false, false],
+
+            // Match flow status
+            isHandInProgress: false,
+            isProcessingTrick: false,
+            matchWinner: null
+        };
+
+        /* ==========================================================================
+           3. DECK & CARD HELPER FUNCTIONS
+           ========================================================================== */
+        function createDeck() {
+            const deck = [];
+            for (let r of RANK_ORDER) {
+                for (let s of SUITS) {
+                    deck.push({
+                        rank: r,
+                        suit: s,
+                        id: `${r}-${s.name}`
+                    });
+                }
+            }
+            return deck;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Get the card rank immediately higher than vira in RANK_ORDER
+        function getManilhaRank(viraRank) {
+            const index = RANK_ORDER.indexOf(viraRank);
+            const nextIndex = (index + 1) % RANK_ORDER.length;
+            return RANK_ORDER[nextIndex];
+        }
+
+        /**
+         * Calculates absolute strength score of a card given the current manilha
+         * Normal cards: score based on RANK_ORDER index (0 to 8)
+         * Manilha cards: score >= 100 + suit.power (101 to 104)
+         */
+        function getCardValue(card, manilhaRank) {
+            if (card.rank === manilhaRank) {
+                return 100 + card.suit.power;
+            } else {
+                return RANK_ORDER.indexOf(card.rank);
+            }
+        }
+
+        /* ==========================================================================
+           4. GAME FLOW CONTROL LOGIC
+           ========================================================================== */
+        
+        function initGame() {
+            gameState.scores = [0, 0, 0];
+            gameState.resets = [0, 0, 0];
+            gameState.handsPlayed = 0;
+            gameState.starterPlayer = 0;
+            gameState.matchWinner = null;
+            
+            updateScoreboardUI();
+            logMessage('Partida iniciada! Boa sorte no Truco Soldado.');
+            startNewHand();
+        }
+
+        function confirmResetGame() {
+            if (confirm("Deseja realmente reiniciar toda a partida? Os pontos serão zerados.")) {
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            document.getElementById('victoryOverlay').classList.add('hidden');
+            document.getElementById('slapOverlay').classList.add('hidden');
+            document.body.classList.remove('slap-shake');
+            initGame();
+        }
+
+        function checkEscuraConditions() {
+            const s = gameState.scores;
+            
+            // Check Global Escura: All 3 players have same score > 0
+            if (s[0] === s[1] && s[1] === s[2] && s[0] > 0) {
+                gameState.isGlobalEscura = true;
+            } else {
+                gameState.isGlobalEscura = false;
+            }
+
+            // Check Individual Escura: Any player at 11 points
+            for (let i = 0; i < 3; i++) {
+                gameState.individualEscura[i] = (s[i] === 11);
+            }
+        }
+
+        function startNewHand() {
+            if (gameState.isProcessingTrick) return;
+            if (gameState.matchWinner !== null) return;
+
+            gameState.handsPlayed++;
+            checkEscuraConditions();
+
+            // Prepare Deck & Vira
+            const deck = shuffle(createDeck());
+            gameState.vira = deck.pop();
+            gameState.manilhaRank = getManilhaRank(gameState.vira.rank);
+
+            // Deal 3 cards per player
+            gameState.playerHands = [
+                [deck.pop(), deck.pop(), deck.pop()],
+                [deck.pop(), deck.pop(), deck.pop()],
+                [deck.pop(), deck.pop(), deck.pop()]
+            ];
+
+            gameState.currentTrick = 0;
+            gameState.trickPlayedCards = [];
+            gameState.trickWinners = [];
+            gameState.isHandInProgress = true;
+
+            // Set turn to starter player (rotates each hand)
+            if (gameState.handsPlayed > 1) {
+                gameState.starterPlayer = (gameState.starterPlayer + 1) % 3;
+            }
+            gameState.turnPlayer = gameState.starterPlayer;
+
+            // Render Board
+            renderViraCardUI();
+            renderAllHandsUI();
+            clearPlayedCardsUI();
+            updateTrickBadgeUI();
+            updateScoreboardUI();
+
+            logMessage(`--- Nova Mão (${gameState.handsPlayed}ª) --- Vira é [${gameState.vira.rank}${gameState.vira.suit.symbol}]. Manilha: ${gameState.manilhaRank}`);
+
+            // Enable/disable action button
+            document.getElementById('nextHandBtn').classList.add('opacity-50', 'pointer-events-none');
+
+            // Trigger AI if starter is AI
+            if (PLAYERS[gameState.turnPlayer].isAI) {
+                scheduleAITurn();
+            }
+        }
+
+        /* ==========================================================================
+           5. PLAYING A CARD & TRICK RESOLUTION
+           ========================================================================== */
+        
+        function playCard(playerId, cardIndex) {
+            if (!gameState.isHandInProgress || gameState.isProcessingTrick) return;
+            if (playerId !== gameState.turnPlayer) return;
+
+            const hand = gameState.playerHands[playerId];
+            if (cardIndex < 0 || cardIndex >= hand.length) return;
+
+            const playedCard = hand.splice(cardIndex, 1)[0];
+            gameState.trickPlayedCards.push({ playerId, card: playedCard });
+
+            soundSystem.playCard();
+
+            // Render Played Card
+            renderPlayedCardUI(playerId, playedCard);
+            renderHandUI(playerId);
+
+            logMessage(`${PLAYERS[playerId].name} jogou [${playedCard.rank}${playedCard.suit.symbol}]`);
+
+            // If trick complete (3 cards played)
+            if (gameState.trickPlayedCards.length === 3) {
+                gameState.isProcessingTrick = true;
+                setTimeout(resolveTrick, 1000);
+            } else {
+                // Advance turn to next player
+                gameState.turnPlayer = (gameState.turnPlayer + 1) % 3;
+                updateTurnBadgesUI();
+
+                if (PLAYERS[gameState.turnPlayer].isAI) {
+                    scheduleAITurn();
+                }
+            }
+        }
+
+        function resolveTrick() {
+            const played = gameState.trickPlayedCards;
+            let highestVal = -1;
+            let winnerPlayerId = null;
+            let isTie = false;
+
+            // Evaluate played cards
+            for (let item of played) {
+                const val = getCardValue(item.card, gameState.manilhaRank);
+                if (val > highestVal) {
+                    highestVal = val;
+                    winnerPlayerId = item.playerId;
+                    isTie = false;
+                } else if (val === highestVal) {
+                    isTie = true; // Tie in card strength
+                }
+            }
+
+            const pointsAwarded = TRICK_POINTS[gameState.currentTrick];
+
+            if (isTie) {
+                logMessage(`Vaza ${gameState.currentTrick + 1} empatou! Ninguém pontua.`);
+                gameState.trickWinners.push(null);
+            } else {
+                logMessage(`Vaza ${gameState.currentTrick + 1} vencida por ${PLAYERS[winnerPlayerId].name}! (+${pointsAwarded} tentos)`);
+                gameState.trickWinners.push(winnerPlayerId);
+
+                // CRITICAL RULE 3: Add points immediately and check bust/victory
+                addPointsAndCheckBust(winnerPlayerId, pointsAwarded);
+            }
+
+            // Next trick setup
+            gameState.currentTrick++;
+            
+            setTimeout(() => {
+                clearPlayedCardsUI();
+                gameState.trickPlayedCards = [];
+
+                // Check if hand ended or should continue
+                if (gameState.currentTrick < 3) {
+                    updateTrickBadgeUI();
+                    
+                    // Winner of trick starts next trick (if tied, original starter starts)
+                    if (!isTie && winnerPlayerId !== null) {
+                        gameState.turnPlayer = winnerPlayerId;
+                    } else {
+                        gameState.turnPlayer = gameState.starterPlayer;
+                    }
+                    
+                    gameState.isProcessingTrick = false;
+                    updateTurnBadgesUI();
+
+                    if (PLAYERS[gameState.turnPlayer].isAI) {
+                        scheduleAITurn();
+                    }
+                } else {
+                    // Hand complete
+                    finishHand();
+                }
+            }, 1200);
+        }
+
+        /**
+         * CRITICAL RULE 3: Points addition, immediate bust logic and exact 12 victory check
+         */
+        function addPointsAndCheckBust(playerId, points) {
+            gameState.scores[playerId] += points;
+
+            // ESTOURO: Total >= 13 -> Reset immediately to 0 and add reset count
+            if (gameState.scores[playerId] >= 13) {
+                soundSystem.playBust();
+                gameState.scores[playerId] = 0;
+                gameState.resets[playerId]++;
+                logMessage(`💥 ESTOURO! ${PLAYERS[playerId].name} atingiu 13+ tentos! Sua pontuação voltou para 0.`);
+            } else if (gameState.scores[playerId] === 12) {
+                logMessage(`🎯 ${PLAYERS[playerId].name} CRAVOU EXATAMENTE 12 TENTOS!`);
+            }
+
+            updateScoreboardUI();
+        }
+
+        function finishHand() {
+            gameState.isHandInProgress = false;
+            gameState.isProcessingTrick = false;
+
+            // Check if anyone has exactly 12 points at end of hand
+            const winners = [];
+            for (let i = 0; i < 3; i++) {
+                if (gameState.scores[i] === 12) {
+                    winners.push(i);
+                }
+            }
+
+            if (winners.length > 0) {
+                // We have a match winner!
+                gameState.matchWinner = winners[0]; // If tie at 12, first in order wins
+                handleMatchEnd(gameState.matchWinner);
+            } else {
+                // No match winner yet, allow starting next hand
+                document.getElementById('nextHandBtn').classList.remove('opacity-50', 'pointer-events-none');
+                logMessage("Mão finalizada! Clique em 'NOVA MÃO' para prosseguir.");
+            }
+        }
+
+        /* ==========================================================================
+           6. END OF MATCH & TAPA NA VACA (CASTIGO)
+           ========================================================================== */
+        
+        function handleMatchEnd(winnerId) {
+            soundSystem.playWin();
+            
+            // Check for losers with EXACTLY 0 points for the Tapa na Vaca punishment
+            const punishedPlayers = [];
+            for (let i = 0; i < 3; i++) {
+                if (i !== winnerId && gameState.scores[i] === 0) {
+                    punishedPlayers.push(PLAYERS[i].name);
+                }
+            }
+
+            if (punishedPlayers.length > 0) {
+                // Trigger Slap Punishment Overlay first
+                setTimeout(() => {
+                    triggerSlapOverlay(punishedPlayers, winnerId);
+                }, 800);
+            } else {
+                // Directly show Victory Screen
+                showVictoryOverlay(winnerId);
+            }
+        }
+
+        function triggerSlapOverlay(punishedNames, winnerId) {
+            soundSystem.playSlap();
+            
+            document.body.classList.add('slap-shake');
+            const slapOverlay = document.getElementById('slapOverlay');
+            document.getElementById('slapTargetText').innerText = `${punishedNames.join(' e ')} terminou com 0 tentos!`;
+            slapOverlay.classList.remove('hidden');
+
+            // Store winner id for transition
+            slapOverlay.dataset.winnerId = winnerId;
+        }
+
+        function closeSlapOverlay() {
+            document.body.classList.remove('slap-shake');
+            document.getElementById('slapOverlay').classList.add('hidden');
+            
+            const winnerId = parseInt(document.getElementById('slapOverlay').dataset.winnerId || "0");
+            showVictoryOverlay(winnerId);
+        }
+
+        function showVictoryOverlay(winnerId) {
+            document.getElementById('victoryTitle').innerText = `${PLAYERS[winnerId].name.toUpperCase()} VENCEU!`;
+            document.getElementById('victorySubtitle').innerText = `${PLAYERS[winnerId].name} cravou 12 tentos na partida!`;
+
+            document.getElementById('finalScore0').innerText = `${gameState.scores[0]} tentos (${gameState.resets[0]} estouros)`;
+            document.getElementById('finalScore1').innerText = `${gameState.scores[1]} tentos (${gameState.resets[1]} estouros)`;
+            document.getElementById('finalScore2').innerText = `${gameState.scores[2]} tentos (${gameState.resets[2]} estouros)`;
+
+            document.getElementById('victoryOverlay').classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           7. INTELLIGENT AI ENGINE (WITH COALITION)
+           ========================================================================== */
+        
+        function scheduleAITurn() {
+            setTimeout(executeAITurn, 800);
+        }
+
+        function executeAITurn() {
+            if (!gameState.isHandInProgress || gameState.isProcessingTrick) return;
+            const aiId = gameState.turnPlayer;
+            if (!PLAYERS[aiId].isAI) return;
+
+            const hand = gameState.playerHands[aiId];
+            if (!hand || hand.length === 0) return;
+
+            let chosenCardIndex = 0;
+
+            // If player is in Escura (Blind choice)
+            const isEscura = gameState.isGlobalEscura || gameState.individualEscura[aiId];
+            if (isEscura) {
+                // Play random card blindly
+                chosenCardIndex = Math.floor(Math.random() * hand.length);
+            } else {
+                chosenCardIndex = selectBestAICard(aiId, hand);
+            }
+
+            playCard(aiId, chosenCardIndex);
+        }
+
+        /**
+         * AI Decision Logic including Normal Strategy & Coalition Strategy
+         */
+        function selectBestAICard(aiId, hand) {
+            const manilha = gameState.manilhaRank;
+            const playedCards = gameState.trickPlayedCards;
+
+            // Evaluate hand cards strength
+            const evaluatedHand = hand.map((card, index) => ({
+                index,
+                card,
+                val: getCardValue(card, manilha)
+            }));
+            
+            // Sort lowest to highest strength
+            evaluatedHand.sort((a, b) => a.val - b.val);
+
+            // CASE 1: AI is the FIRST to play in this trick
+            if (playedCards.length === 0) {
+                // Play weakest card to test table
+                return evaluatedHand[0].index;
+            }
+
+            // Find current highest card on table
+            let highestTableVal = -1;
+            let highestTablePlayer = null;
+            for (let item of playedCards) {
+                const val = getCardValue(item.card, manilha);
+                if (val > highestTableVal) {
+                    highestTableVal = val;
+                    highestTablePlayer = item.playerId;
+                }
+            }
+
+            // COALITION CHECK (Rule 6 - A Treta):
+            // Check if current leader on table is a target (has 8 to 11 points)
+            const isTargetLeading = highestTablePlayer !== null && 
+                                    gameState.scores[highestTablePlayer] >= 8 && 
+                                    gameState.scores[highestTablePlayer] <= 11;
+
+            // If AI is SECOND to play, and target is currently winning the trick:
+            if (playedCards.length === 1 && isTargetLeading) {
+                // Coalition: Play weakest card intentionally to leave room for 3rd player to steal trick!
+                return evaluatedHand[0].index;
+            }
+
+            // NORMAL AI STRATEGY:
+            // Find lowest card in hand that can beat highest table card
+            const winningCards = evaluatedHand.filter(item => item.val > highestTableVal);
+
+            if (winningCards.length > 0) {
+                // Play lowest winning card
+                return winningCards[0].index;
+            } else {
+                // Cannot win trick, discard lowest card
+                return evaluatedHand[0].index;
+            }
+        }
+
+        /* ==========================================================================
+           8. UI RENDERING & DOM UPDATES
+           ========================================================================== */
+        
+        function renderViraCardUI() {
+            const vira = gameState.vira;
+            if (!vira) return;
+
+            document.getElementById('viraTopRank').innerText = vira.rank;
+            document.getElementById('viraTopRank').className = `text-xs font-bold leading-none ${vira.suit.color}`;
+            
+            document.getElementById('viraCenterSuit').innerText = vira.suit.symbol;
+            document.getElementById('viraCenterSuit').className = `text-center text-lg sm:text-xl leading-none ${vira.suit.color}`;
+
+            document.getElementById('viraBottomRank').innerText = vira.rank;
+            document.getElementById('viraBottomRank').className = `text-xs font-bold leading-none text-right ${vira.suit.color}`;
+        }
+
+        function renderAllHandsUI() {
+            for (let i = 0; i < 3; i++) {
+                renderHandUI(i);
+            }
+        }
+
+        function renderHandUI(playerId) {
+            const container = document.getElementById(`hand-${playerId}`);
+            if (!container) return;
+            container.innerHTML = '';
+
+            const hand = gameState.playerHands[playerId];
+            const isEscura = gameState.isGlobalEscura || gameState.individualEscura[playerId];
+
+            hand.forEach((card, index) => {
+                const cardElem = document.createElement('div');
+                cardElem.className = 'card-container';
+
+                if (playerId === 0) {
+                    // Human Hand
+                    if (isEscura) {
+                        // Render Blind Card (Pig Back)
+                        cardElem.innerHTML = `
+                            <div onclick="playCard(0, ${index})" class="card w-14 h-20 sm:w-20 sm:h-28 card-back rounded-xl cursor-pointer flex flex-col justify-center items-center text-2xl border-2 border-purple-300 shadow-xl">
+                                🐷
+                            </div>
+                        `;
+                    } else {
+                        // Render Open Card
+                        const isManilha = card.rank === gameState.manilhaRank;
+                        cardElem.innerHTML = `
+                            <div onclick="playCard(0, ${index})" class="card w-14 h-20 sm:w-20 sm:h-28 bg-slate-50 rounded-xl cursor-pointer p-1.5 sm:p-2 flex flex-col justify-between border-2 ${isManilha ? 'border-amber-400 ring-2 ring-yellow-300' : 'border-slate-300'} shadow-xl">
+                                <span class="text-xs sm:text-sm font-extrabold ${card.suit.color} leading-none">${card.rank}</span>
+                                <span class="text-center text-xl sm:text-3xl ${card.suit.color} leading-none">${card.suit.symbol}</span>
+                                <span class="text-xs sm:text-sm font-extrabold ${card.suit.color} leading-none text-right">${card.rank}</span>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // AI Hands (Face down or revealed if played)
+                    cardElem.innerHTML = `
+                        <div class="card w-10 h-14 sm:w-12 sm:h-18 card-back rounded-lg border border-white/20 flex items-center justify-center text-sm shadow">
+                            🐷
+                        </div>
+                    `;
+                }
+
+                container.appendChild(cardElem);
+            });
+        }
+
+        function renderPlayedCardUI(playerId, card) {
+            const slot = document.getElementById(`played-card-${playerId}`);
+            if (!slot) return;
+
+            const isManilha = card.rank === gameState.manilhaRank;
+
+            slot.innerHTML = `
+                <div class="w-14 h-20 sm:w-20 sm:h-28 bg-slate-50 rounded-xl p-1.5 sm:p-2 flex flex-col justify-between border-2 ${isManilha ? 'border-amber-400 ring-2 ring-yellow-300' : 'border-slate-300'} shadow-2xl transform transition-all duration-300 animate-fade-in">
+                    <span class="text-xs sm:text-sm font-extrabold ${card.suit.color} leading-none">${card.rank}</span>
+                    <span class="text-center text-xl sm:text-3xl ${card.suit.color} leading-none">${card.suit.symbol}</span>
+                    <span class="text-xs sm:text-sm font-extrabold ${card.suit.color} leading-none text-right">${card.rank}</span>
+                </div>
+            `;
+        }
+
+        function clearPlayedCardsUI() {
+            for (let i = 0; i < 3; i++) {
+                const slot = document.getElementById(`played-card-${i}`);
+                if (slot) slot.innerHTML = '';
+            }
+        }
+
+        function updateTrickBadgeUI() {
+            const badge = document.getElementById('trickInfoBadge');
+            const points = TRICK_POINTS[gameState.currentTrick];
+            badge.innerText = `VAZA ${gameState.currentTrick + 1}: VALE ${points} TENTO${points > 1 ? 'S' : ''}`;
+        }
+
+        function updateTurnBadgesUI() {
+            for (let i = 0; i < 3; i++) {
+                const badge = document.getElementById(`turn-badge-${i}`);
+                const avatar = document.getElementById(`avatar-${i}`);
+                
+                if (i === gameState.turnPlayer) {
+                    badge.classList.remove('hidden');
+                    avatar.classList.add('ring-4', 'ring-yellow-400');
+                } else {
+                    badge.classList.add('hidden');
+                    avatar.classList.remove('ring-4', 'ring-yellow-400');
+                }
+            }
+        }
+
+        function updateScoreboardUI() {
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`score-${i}`).innerText = gameState.scores[i];
+                document.getElementById(`resets-${i}`).innerText = gameState.resets[i];
+            }
+
+            // Escura Global Badge
+            const escuraBadge = document.getElementById('escuraBadge');
+            if (gameState.isGlobalEscura) {
+                escuraBadge.classList.remove('hidden');
+            } else {
+                escuraBadge.classList.add('hidden');
+            }
+
+            // Escura Individual Tag for Human
+            const escuraTag0 = document.getElementById('escuraTag0');
+            if (gameState.individualEscura[0]) {
+                escuraTag0.classList.remove('hidden');
+            } else {
+                escuraTag0.classList.add('hidden');
+            }
+
+            updateTurnBadgesUI();
+        }
+
+        function logMessage(msg) {
+            const logContent = document.getElementById('logContent');
+            const entry = document.createElement('div');
+            entry.className = 'py-0.5 border-b border-emerald-900/50';
+            entry.innerText = msg;
+            logContent.appendChild(entry);
+
+            // Auto scroll to bottom
+            const logBox = document.getElementById('gameLog');
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        /* ==========================================================================
+           9. MODAL CONTROL & BOOTSTRAP
+           ========================================================================== */
+        
+        function openRulesModal() {
+            document.getElementById('rulesModal').classList.remove('hidden');
+        }
+
+        function closeRulesModal() {
+            document.getElementById('rulesModal').classList.add('hidden');
+        }
+
+        // Initialize game on window load
+        window.onload = function() {
+            initGame();
+        };
+    </script>
 </body>
 </html>
