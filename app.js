@@ -1,21 +1,23 @@
 // ============================================================
-//                      TRUCO SOLDADO 
+// TRUCO SOLDADO — A Versão Definitiva
 // ============================================================
 
 const NAIPES = ["ouro", "espada", "copas", "paus"]; 
 const VALORES = ["4", "5", "6", "7", "Q", "J", "K", "A", "2", "3"];
-const FORCA_NORMAL = ["3", "2", "A", "K", "J", "Q", "7", "6", "5", "4"]; // Ordem do Sul
+const FORCA_NORMAL = ["3", "2", "A", "K", "J", "Q", "7", "6", "5", "4"]; // Ordem do Sul (Q < J < K)
 const SIMBOLOS = { ouro: "♦", espada: "♠", copas: "♥", paus: "♣" };
 
 const PONTOS_POR_VAZA = [3, 2, 1];
 const NOMES = ["Porco Verde", "Porco Mulato", "Porco Anjo"];
 const HUMANO = 0;
 
+// --- Funções Auxiliares ---
 function criarBaralho() {
   const b = [];
   for (const naipe of NAIPES) for (const valor of VALORES) b.push({ valor, naipe });
   return b;
 }
+
 function embaralhar(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -24,19 +26,23 @@ function embaralhar(arr) {
   }
   return a;
 }
+
 function valorDaManilha(vira) {
   const idx = VALORES.indexOf(vira.valor);
   return VALORES[(idx + 1) % VALORES.length];
 }
+
 function forcaDaCarta(carta, manilhaValor) {
   if (carta.valor === manilhaValor) return 1000 + NAIPES.indexOf(carta.naipe);
   const idx = FORCA_NORMAL.indexOf(carta.valor);
   return 100 + (9 - idx);
 }
+
 function rotuloCarta(carta) {
   return `${carta.valor}${SIMBOLOS[carta.naipe] || ""}`;
 }
 
+// --- Estado Global ---
 const state = {
   tentos: [0, 0, 0],
   zeradas: [0, 0, 0],
@@ -49,8 +55,7 @@ const state = {
   vazaAtual: 0,
   vazasGanhas: [0, 0, 0],
   jogadorInicial: -1,
-  fase: "jogando", 
-  vencedorMao: null,
+  fase: "jogando", // "jogando" | "fimMao" | "castigo" | "fimPartida"
   mensagem: "",
   castigadoAtual: null,
 };
@@ -61,11 +66,13 @@ function recalcularEscura() {
   const escuraIndividual = state.tentos.map(t => t === 11);
   return { escuraGlobal, escuraIndividual };
 }
+
 function emEscura(i) {
   const { escuraGlobal, escuraIndividual } = recalcularEscura();
   return escuraGlobal || escuraIndividual[i];
 }
 
+// --- Fluxo de Jogo ---
 function novaMao() {
   if (state.fase === "fimPartida") {
     state.tentos = [0, 0, 0];
@@ -86,12 +93,10 @@ function novaMao() {
   state.quemJogou = [false, false, false];
   state.vazaAtual = 0;
   state.vazasGanhas = [0, 0, 0];
-  state.vencedorMao = null;
   state.fase = "jogando";
   state.mensagem = "";
 
   state.jogadorInicial = (state.jogadorInicial + 1) % 3;
-
   render();
   setTimeout(talvezIAsJoguem, 600);
 }
@@ -135,7 +140,7 @@ function jogadaIA(jogador) {
   let indice;
 
   if (escura) {
-    indice = Math.floor(Math.random() * mao.length);
+    indice = Math.floor(Math.random() * mao.length); // Joga aleatório se estiver na escura
   } else {
     const cartasNaMesa = state.mesa
       .map((c, idx) => (c && idx !== jogador ? c : null))
@@ -148,9 +153,9 @@ function jogadaIA(jogador) {
       .sort((a, b) => a.forca - b.forca);
 
     if (maiorNaMesa < 0) {
-      indice = ordenadas[0].idx;
+      indice = ordenadas[0].idx; // Se é o primeiro a jogar, tenta a mais fraca
     } else {
-      const vencedora = ordenadas.find(o => o.forca > maiorNaMesa);
+      const vencedora = ordenadas.find(o => o.forca > maiorNaMesa); // Tenta achar a menor que ganha
       indice = vencedora ? vencedora.idx : ordenadas[0].idx;
     }
   }
@@ -170,7 +175,7 @@ function resolverVaza() {
     state.vazasGanhas[vencedor]++;
     const pontos = PONTOS_POR_VAZA[state.vazaAtual] ?? 0;
     
-    // AQUI: Aplica os tentos mas NÃO trava o jogo se der 12. Deixa a mão terminar.
+    // Soma os tentos na vaza, mas o jogo não acaba aqui se bater 12. Deixa a mão terminar.
     if (pontos > 0) state.tentos[vencedor] += pontos;
     
     state.mensagem = `${NOMES[vencedor]} ganhou a ${state.vazaAtual + 1}ª vaza (+${pontos})`;
@@ -181,7 +186,7 @@ function resolverVaza() {
   state.vazaAtual++;
 
   if (state.vazaAtual >= 3) {
-    resolverMao(); // Só resolve a mão quando as 3 vazas terminarem
+    resolverMao();
     return;
   }
 
@@ -203,31 +208,29 @@ function resolverMao() {
   else if (g2 > g1 && g2 > g3) vencedor = 1;
   else if (g3 > g1 && g3 > g2) vencedor = 2;
 
-  state.vencedorMao = vencedor;
   state.fase = "fimMao";
   state.mensagem = vencedor !== null
     ? `${NOMES[vencedor]} ganhou a mão`
     : "Mão empatada — ninguém ganhou";
 
-  // CHECAGEM DE FIM DE JOGO AQUI (Depois que a mão acabou)
   verificarFimDeJogo();
   render();
 }
 
 function verificarFimDeJogo() {
-  // 1. Checa se alguém bateu 13 ou mais (Estourou)
+  // Checa se alguém passou de 13 e estourou
   for (let i = 0; i < 3; i++) {
     if (state.tentos[i] >= 13) {
       state.tentos[i] = 0;
       state.zeradas[i]++;
       state.castigadoAtual = i;
-      state.fase = "castigo"; // Chama o tapa na vaca
+      state.fase = "castigo";
       state.mensagem = `${NOMES[i]} estourou e foi para o ZERO!`;
-      return; // Para a checagem, o tapa tem que ser resolvido primeiro
+      return;
     }
   }
 
-  // 2. Checa se alguém fez 12 (Ganhou)
+  // Checa se alguém fez 12 e ganhou a partida
   for (let i = 0; i < 3; i++) {
     if (state.tentos[i] >= 12) {
       state.fase = "fimPartida";
@@ -237,7 +240,7 @@ function verificarFimDeJogo() {
   }
 }
 
-// ---------- Tapa Overlay ----------
+// --- Tapa na Vaca (Castigo) ---
 function mostrarTapa(jogador) {
   const overlay = document.getElementById("tapa-overlay");
   const texto = document.getElementById("tapa-quem");
@@ -249,14 +252,11 @@ document.getElementById("btn-fechar-tapa").addEventListener("click", () => {
   document.getElementById("tapa-overlay").classList.add("escondido");
   state.fase = "fimMao";
   state.mensagem = `O castigo foi aplicado. Preparem a próxima mão!`;
-  
-  // Se depois do tapa alguém tiver 12 (por exemplo, os outros continuaram),
-  // a gente não quer travar, então só deixa seguir.
   verificarFimDeJogo(); 
   render();
 });
 
-// ---------- Render ----------
+// --- Renderização Visual ---
 function render() {
   renderStatus();
   renderBaralhoVira();
@@ -305,6 +305,9 @@ function renderBaralhoVira() {
   
   const viraEl = document.createElement("div");
   viraEl.className = "vira-card";
+  if (state.vira.naipe === "copas" || state.vira.naipe === "ouro") viraEl.classList.add("vermelha");
+  else viraEl.classList.add("preta");
+  
   viraEl.textContent = rotuloCarta(state.vira);
   viraEl.style.position = "absolute";
   viraEl.style.transform = "translate(8px, 8px) rotate(10deg)";
@@ -391,14 +394,26 @@ function renderPlacar() {
 function criarCartaEl(carta, { virada = false, jogada = false, onClick = null } = {}) {
   const div = document.createElement("div");
   div.className = "carta";
-  if (virada) div.classList.add("virada");
+  
+  if (virada) {
+    div.classList.add("virada");
+  } else {
+    // Adiciona a cor real do baralho
+    if (carta.naipe === "copas" || carta.naipe === "ouro") {
+      div.classList.add("vermelha");
+    } else {
+      div.classList.add("preta");
+    }
+    div.textContent = rotuloCarta(carta);
+  }
+
   if (jogada) div.classList.add("jogada");
-  if (!virada) div.textContent = rotuloCarta(carta);
   if (onClick && !jogada) div.addEventListener("click", onClick);
+  
   return div;
 }
 
-// Inicialização
+// --- Inicialização e Eventos dos Botões ---
 document.getElementById("btn-nova-mao").addEventListener("click", () => {
   if (state.fase === "castigo" || state.fase === "fimPartida") return; 
   novaMao();
