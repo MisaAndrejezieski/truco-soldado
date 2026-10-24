@@ -3,27 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Truco Soldado 🐄</title>
+  <title>Truco Soldado 🐷🐄</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>Truco Soldado 🐄</h1>
+    <h1>Truco Soldado 🐷🐄</h1>
     <div id="status-escura" class="status"></div>
   </header>
 
   <main>
     <div id="mesa-circular" class="mesa-circular">
-      <!-- Assentos -->
       <div class="assento assento-humano" id="assento-0"></div>
       <div class="assento assento-ia1" id="assento-1"></div>
       <div class="assento assento-ia2" id="assento-2"></div>
 
-      <!-- Centro da mesa: Baralho, Vira e Cartas Jogadas -->
       <div class="centro-mesa">
         <div id="baralho-vira" class="baralho-vira"></div>
-        
-        <!-- Onde as cartas jogadas aparecem -->
         <div id="cartas-jogadas" class="cartas-jogadas">
           <div id="carta-jogada-0" class="slot-jogada slot-humano"></div>
           <div id="carta-jogada-1" class="slot-jogada slot-ia1"></div>
@@ -39,20 +35,14 @@
       <button id="btn-reset">Reset partida</button>
     </section>
 
-    <section id="tapas" class="tapas">
-      <h2>Registrar tapa 🐄👋</h2>
-      <div class="tapa-linha">
-        <label>Quem levou?</label>
-        <select id="tapa-quem"></select>
-        <label>Motivo</label>
-        <select id="tapa-motivo">
-          <option value="corte-duplo">Cortou duas cartas</option>
-          <option value="carta-errada">Deu carta errada</option>
-        </select>
-        <button id="btn-tapa">Registrar</button>
+    <div id="tapa-overlay" class="tapa-overlay escondido">
+      <div class="tapa-conteudo">
+        <h2 id="tapa-texto">CASTIGO NA VACA!</h2>
+        <div class="tapa-animacao">🍑✋🐄</div>
+        <p id="tapa-quem"></p>
+        <button id="btn-fechar-tapa">Já levou o tapa!</button>
       </div>
-      <div id="tapa-log" class="tapa-log"></div>
-    </section>
+    </div>
   </main>
 
   <script src="app.js"></script>
