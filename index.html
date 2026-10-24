@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Truco Soldado 🐄</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Truco Soldado 🐄</h1>
+    <div id="status-escura" class="status"></div>
+  </header>
+
+  <main>
+    <section id="placar" class="placar"></section>
+
+    <section id="mesa" class="mesa"></section>
+
+    <section id="maos" class="maos"></section>
+
+    <section id="controles" class="controles">
+      <button id="btn-nova-mao">Nova mão</button>
+      <button id="btn-reset">Reset partida</button>
+    </section>
+
+    <section id="tapas" class="tapas">
+      <h2>Registrar tapa 🐄👋</h2>
+      <div class="tapa-linha">
+        <label>Quem levou?</label>
+        <select id="tapa-quem"></select>
+        <label>Motivo</label>
+        <select id="tapa-motivo">
+          <option value="corte-duplo">Cortou duas cartas</option>
+          <option value="carta-errada">Deu carta errada</option>
+        </select>
+        <button id="btn-tapa">Registrar</button>
+      </div>
+      <div id="tapa-log" class="tapa-log"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
