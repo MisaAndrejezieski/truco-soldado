@@ -1,19 +1,14 @@
 // ============================================================
-// TRUCO SOLDADO — v1: humano vs 2 IAs independentes (mesa circular)
-// CORREÇÕES:
-//  - Baralho e Vira no centro da mesa.
-//  - Cartas jogadas posicionadas ao redor do centro.
-//  - Vitória aos 12 tentos: jogo trava e declara o vencedor.
+// TRUCO SOLDADO — v2.0 (Porcos, Tapa Animado, Ordem do Sul)
 // ============================================================
 
 const NAIPES = ["ouro", "espada", "copas", "paus"]; 
 const VALORES = ["4", "5", "6", "7", "Q", "J", "K", "A", "2", "3"];
-const FORCA_NORMAL = ["3", "2", "A", "K", "J", "Q", "7", "6", "5", "4"];
+const FORCA_NORMAL = ["3", "2", "A", "K", "J", "Q", "7", "6", "5", "4"]; // Ordem do Sul
 const SIMBOLOS = { ouro: "♦", espada: "♠", copas: "♥", paus: "♣" };
 
 const PONTOS_POR_VAZA = [3, 2, 1];
-
-const NOMES = ["Você", "IA 1", "IA 2"];
+const NOMES = ["Porco Verde", "Porco Mulato", "Porco Anjo"];
 const HUMANO = 0;
 
 function criarBaralho() {
@@ -45,8 +40,6 @@ function rotuloCarta(carta) {
 const state = {
   tentos: [0, 0, 0],
   zeradas: [0, 0, 0],
-  tapas: [0, 0, 0],
-  tapaLog: [],
   baralho: [],
   vira: null,
   manilhaValor: null,
@@ -59,6 +52,7 @@ const state = {
   fase: "jogando", 
   vencedorMao: null,
   mensagem: "",
+  castigadoAtual: null, // Guarda quem zerou para mostrar o overlay
 };
 
 function recalcularEscura() {
@@ -76,8 +70,6 @@ function novaMao() {
   if (state.fase === "fimPartida") {
     state.tentos = [0, 0, 0];
     state.zeradas = [0, 0, 0];
-    state.tapas = [0, 0, 0];
-    state.tapaLog = [];
     state.jogadorInicial = -1;
   }
 
@@ -118,7 +110,7 @@ function jogarCarta(jogador, indiceCarta) {
   if (state.fase !== "jogando") return;
 
   if (state.quemJogou.every(Boolean)) {
-    setTimeout(resolverVaza, 700);
+    setTimeout(resolverVaza, 800);
   } else {
     setTimeout(talvezIAsJoguem, 400);
   }
@@ -172,6 +164,7 @@ function resolverVaza() {
   const vencedores = forcas.map((f, i) => (f === maxForca ? i : -1)).filter(i => i !== -1);
 
   let vencedor = null;
+  
   if (vencedores.length === 1) {
     vencedor = vencedores[0];
     state.vazasGanhas[vencedor]++;
@@ -192,12 +185,15 @@ function resolverVaza() {
     return;
   }
 
-  state.jogadorInicial = vencedor !== null ? vencedor : state.jogadorInicial;
+  if (vencedor !== null) {
+    state.jogadorInicial = vencedor;
+  }
+  
   state.mesa = [null, null, null];
   state.quemJogou = [false, false, false];
 
   render();
-  setTimeout(talvezIAsJoguem, 500);
+  setTimeout(talvezIAsJoguem, vencedor === null ? 1800 : 800);
 }
 
 function resolverMao() {
@@ -219,25 +215,34 @@ function resolverMao() {
 function aplicarTentos(jogador, pontos) {
   state.tentos[jogador] += pontos;
   
-  if (state.tentos[jogador] >= 12) {
-    if (state.tentos[jogador] === 12) {
-      state.fase = "fimPartida";
-      state.mensagem = `🏆 ${NOMES[jogador]} fez 12 tentos e VENCEU A PARTIDA!`;
-      state.tapaLog.unshift(`🏆 ${NOMES[jogador]} fez 12 tentos — vitória!`);
-    } else if (state.tentos[jogador] >= 13) {
-      state.tentos[jogador] = 0;
-      state.zeradas[jogador]++;
-      state.tapaLog.unshift(`💥 ${NOMES[jogador]} estourou (${state.tentos[jogador] + pontos} → 0)! Castigo na vaca 🐄👋`);
-    }
+  if (state.tentos[jogador] === 12) {
+    state.fase = "fimPartida";
+    state.mensagem = `🏆 ${NOMES[jogador]} fez 12 tentos e VENCEU A PARTIDA!`;
+  } else if (state.tentos[jogador] >= 13) {
+    // ESTOUROU! Volta a zero e chama o castigo
+    state.tentos[jogador] = 0;
+    state.zeradas[jogador]++;
+    state.castigadoAtual = jogador;
+    
+    // Trava o jogo até o jogador fechar o tapa
+    state.fase = "castigo";
   }
 }
 
-function registrarTapa(jogador, motivo) {
-  state.tapas[jogador]++;
-  const label = motivo === "corte-duplo" ? "cortou duas cartas" : "deu carta errada";
-  state.tapaLog.unshift(`🐄👋 Tapa: ${NOMES[jogador]} ${label}`);
-  render();
+// ---------- Tapa Overlay ----------
+function mostrarTapa(jogador) {
+  const overlay = document.getElementById("tapa-overlay");
+  const texto = document.getElementById("tapa-quem");
+  texto.innerHTML = `<strong>${NOMES[jogador]}</strong> estourou e foi para o ZERO!<br>Pode ir dar o tapa na vaca! 🐄👋`;
+  overlay.classList.remove("escondido");
 }
+
+document.getElementById("btn-fechar-tapa").addEventListener("click", () => {
+  document.getElementById("tapa-overlay").classList.add("escondido");
+  state.fase = "fimMao";
+  state.mensagem = `O castigo foi aplicado. Preparem a próxima mão!`;
+  render();
+});
 
 // ---------- Render ----------
 function render() {
@@ -246,8 +251,12 @@ function render() {
   renderAssentos();
   renderCartasJogadas();
   renderPlacar();
-  renderTapaLog();
-  renderTapaSelect();
+  
+  if (state.fase === "castigo" && state.castigadoAtual !== null) {
+    if (document.getElementById("tapa-overlay").classList.contains("escondido")) {
+      mostrarTapa(state.castigadoAtual);
+    }
+  }
 }
 
 function renderStatus() {
@@ -277,10 +286,8 @@ function renderBaralhoVira() {
   el.innerHTML = "";
   if (!state.vira) return;
 
-  // Monte de cartas (só visual)
   const baralhoEl = document.createElement("div");
   baralhoEl.className = "baralho";
-  // Desloca um pouquinho pra dar efeito de monte
   baralhoEl.style.transform = "translate(-4px, -4px)";
   baralhoEl.style.position = "absolute";
   
@@ -313,7 +320,7 @@ function renderAssentos() {
 
     const extraEl = document.createElement("div");
     extraEl.className = "extras";
-    extraEl.textContent = `Zeradas: ${state.zeradas[i]} | Tapas: ${state.tapas[i]}`;
+    extraEl.textContent = `Zeradas: ${state.zeradas[i]}`;
 
     el.appendChild(nomeEl);
     el.appendChild(tentoEl);
@@ -344,7 +351,6 @@ function renderCartasJogadas() {
     
     const carta = state.mesa[i];
     if (carta) {
-      // Quando joga na mesa, a carta é sempre revelada
       el.appendChild(criarCartaEl(carta, { jogada: true }));
     } else {
       const vazio = document.createElement("div");
@@ -380,34 +386,20 @@ function criarCartaEl(carta, { virada = false, jogada = false, onClick = null } 
   return div;
 }
 
-function renderTapaLog() {
-  const el = document.getElementById("tapa-log");
-  el.innerHTML = state.tapaLog.map(l => `<div>${l}</div>`).join("");
-}
+// Inicialização
+document.getElementById("btn-nova-mao").addEventListener("click", () => {
+  if (state.fase === "castigo") return; // Não deixa pular o tapa
+  novaMao();
+});
 
-function renderTapaSelect() {
-  const sel = document.getElementById("tapa-quem");
-  if (sel.options.length === NOMES.length) return;
-  sel.innerHTML = NOMES.map((n, i) => `<option value="${i}">${n}</option>`).join("");
-}
-
-// ---------- Eventos ----------
-document.getElementById("btn-nova-mao").addEventListener("click", novaMao);
 document.getElementById("btn-reset").addEventListener("click", () => {
   state.tentos = [0, 0, 0];
   state.zeradas = [0, 0, 0];
-  state.tapas = [0, 0, 0];
-  state.tapaLog = [];
   state.jogadorInicial = -1;
   state.fase = "jogando";
+  document.getElementById("tapa-overlay").classList.add("escondido");
   novaMao();
 });
-document.getElementById("btn-tapa").addEventListener("click", () => {
-  const quem = Number(document.getElementById("tapa-quem").value);
-  const motivo = document.getElementById("tapa-motivo").value;
-  registrarTapa(quem, motivo);
-});
 
-// ---------- Init ----------
 state.jogadorInicial = -1;
 novaMao();
