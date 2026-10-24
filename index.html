@@ -1,127 +1,1010 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Truco Soldado - Master Edition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0b1d13; }
-        .title-font { font-family: 'Fredoka One', cursive; }
-        .felt-table { background: radial-gradient(circle at center, #1e4d2b 0%, #0d2916 70%, #05140a 100%); box-shadow: inset 0 0 100px rgba(0,0,0,0.8); border: 12px solid #2d1806; }
-        .card { transition: transform 0.2s, box-shadow 0.2s; }
-        .card:hover:not(.disabled) { transform: translateY(-10px) scale(1.05); box-shadow: 0 15px 25px rgba(0,0,0,0.6); z-index: 50; }
-        .card-back { background: linear-gradient(135deg, #f472b6 0%, #db2777 100%); border: 2px solid #fbcfe8; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-1deg); } 50% { transform: translateX(5px) rotate(1deg); } 75% { transform: translateX(-5px) rotate(-1deg); } }
-        .shake { animation: shake 0.4s infinite; }
-        .blind-mask { filter: blur(4px) grayscale(100%); pointer-events: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truco Soldado — Definitivo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at 50% 40%, #1e4d2b 0%, #0d2916 60%, #05140a 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  /* ---------- HEADER ---------- */
+  header {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(6, 30, 18, 0.85);
+    border: 1px solid #1f4d34;
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+  }
+  header h1 { font-size: 18px; color: #facc15; letter-spacing: 1px; }
+  header small { color: #86efac; font-size: 11px; display: block; margin-top: 2px; }
+  .btn {
+    background: #065f46; color: #fde68a; border: 1px solid #10b981;
+    padding: 8px 12px; border-radius: 10px; font-weight: 600;
+    cursor: pointer; font-size: 13px; transition: 0.15s;
+  }
+  .btn:hover { background: #047857; }
+  .btn.reset { background: #991b1b; border-color: #ef4444; color: #fee2e2; }
+  .btn.reset:hover { background: #b91c1c; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ---------- SCOREBOARD ---------- */
+  #scoreboard {
+    width: 100%;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .score-card {
+    background: rgba(0, 0, 0, 0.45);
+    border: 2px solid #334155;
+    border-radius: 12px;
+    padding: 8px 10px;
+    text-align: center;
+    transition: 0.2s;
+  }
+  .score-card.active {
+    border-color: #facc15;
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
+  }
+  .score-card .name { font-size: 12px; font-weight: 700; color: #cbd5e1; }
+  .score-card .tentos { font-size: 22px; font-weight: 800; color: #facc15; }
+  .score-card .zeradas { font-size: 10px; color: #f87171; }
+
+  /* ---------- TABLE ---------- */
+  #table {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    aspect-ratio: 1 / 1;
+    max-height: 620px;
+    background: radial-gradient(circle at center, #2d6a3e 0%, #134d24 70%, #052010 100%);
+    border: 10px solid #3b1f0a;
+    border-radius: 50%;
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.85), 0 8px 30px rgba(0, 0, 0, 0.6);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  /* ---------- PLAYER SLOTS ---------- */
+  .player-slot {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+  }
+  .player-slot .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #1e293b; border: 3px solid #475569;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; transition: 0.2s;
+  }
+  .player-slot.turn .avatar {
+    border-color: #facc15;
+    box-shadow: 0 0 14px rgba(250, 204, 21, 0.7);
+  }
+  .player-slot .label { font-size: 11px; font-weight: 700; color: #cbd5e1; }
+  .player-slot .turn-tag {
+    font-size: 9px; font-weight: 800; color: #000;
+    background: #facc15; padding: 1px 6px; border-radius: 4px;
+    display: none;
+  }
+  .player-slot.turn .turn-tag { display: inline-block; }
+
+  #slot-0 { bottom: 8px; left: 50%; transform: translateX(-50%); }
+  #slot-1 { top: 8px; left: 8px; }
+  #slot-2 { top: 8px; right: 8px; }
+
+  /* ---------- HANDS ---------- */
+  .hand { display: flex; gap: 4px; }
+  #slot-0 .hand { margin-bottom: 4px; }
+  #slot-1 .hand, #slot-2 .hand { margin-top: 4px; }
+
+  /* ---------- CARDS ---------- */
+  .card {
+    width: 46px; height: 66px;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 2px solid #cbd5e1;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 2px 3px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card.manilha { border-color: #f59e0b; box-shadow: 0 0 0 2px #fbbf24, 0 2px 5px rgba(0, 0, 0, 0.4); }
+  .card .rank { font-size: 12px; font-weight: 800; line-height: 1; }
+  .card .suit { font-size: 20px; text-align: center; line-height: 1; }
+  .card .rank.bottom { text-align: right; transform: rotate(180deg); }
+  .card.red { color: #dc2626; }
+  .card.black { color: #0f172a; }
+
+  .card.back {
+    background: linear-gradient(135deg, #f472b6 0%, #db2777 100%);
+    border-color: #fbcfe8;
+    color: #fff; font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+  }
+
+  .card.playable { cursor: pointer; }
+  .card.playable:hover {
+    transform: translateY(-8px) scale(1.06);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+  }
+  .card.hidden-rank .rank, .card.hidden-rank .suit { visibility: hidden; }
+
+  /* ---------- CENTER ---------- */
+  #center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px; height: 220px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  #deck-area {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-80%, -50%);
+    display: flex; align-items: center;
+    gap: 0;
+    z-index: 3;
+  }
+  #deck-area .card.back {
+    transform: rotate(-8deg);
+    width: 50px; height: 72px;
+  }
+  #vira {
+    width: 50px; height: 72px;
+    margin-left: -8px;
+    transform: rotate(90deg);
+    z-index: 4;
+  }
+
+  /* Played card slots around center */
+  .played-slot {
+    position: absolute;
+    width: 50px; height: 72px;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.3s;
+  }
+  #played-0 { bottom: 20px; left: 50%; transform: translateX(-50%); }
+  #played-1 { top: 20px; left: 50%; transform: translateX(-50%); }
+  #played-2 { top: 50%; right: 20px; transform: translateY(-50%); }
+
+  @keyframes fadeInCard {
+    from { opacity: 0; transform: scale(0.7) translateY(15px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .card.played { animation: fadeInCard 0.3s ease-out; }
+
+  /* Trick badge */
+  #trick-badge {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(6, 30, 18, 0.92);
+    border: 1px solid #10b981;
+    color: #fde68a;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Escura banner */
+  #escura-banner {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -130px);
+    background: #581c87;
+    color: #e9d5ff;
+    border: 2px solid #c084fc;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    z-index: 10;
+    display: none;
+  }
+  #escura-banner.show { display: block; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 50% { opacity: 0.6; } }
+
+  /* ---------- FOOTER / LOG ---------- */
+  #log-area {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  #log {
+    flex: 1;
+    background: rgba(6, 30, 18, 0.9);
+    border: 1px solid #1f4d34;
+    border-radius: 10px;
+    padding: 8px 10px;
+    height: 72px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  #log::-webkit-scrollbar { width: 5px; }
+  #log::-webkit-scrollbar-thumb { background: #10b981; border-radius: 3px; }
+  #log .l-info { color: #86efac; }
+  #log .l-trick { color: #67e8f9; }
+  #log .l-win { color: #facc15; }
+  #log .l-bust { color: #f87171; }
+
+  #next-btn {
+    min-width: 130px;
+    background: linear-gradient(to right, #facc15, #f59e0b);
+    color: #0f172a;
+    font-weight: 900;
+    border: 2px solid #fde68a;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.15s;
+  }
+  #next-btn:hover:not(:disabled) { filter: brightness(1.1); transform: scale(1.02); }
+  #next-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ---------- OVERLAYS ---------- */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: #052010;
+    border: 3px solid #facc15;
+    border-radius: 18px;
+    padding: 24px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal h2 { color: #facc15; font-size: 22px; margin-bottom: 12px; }
+  .modal p { color: #d1fae5; font-size: 14px; margin-bottom: 8px; }
+  .modal .final-scores {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #1f4d34;
+    border-radius: 10px;
+    padding: 12px;
+    margin: 16px 0;
+    font-size: 13px;
+    text-align: left;
+  }
+  .modal .final-scores div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .modal .final-scores .winner { color: #facc15; font-weight: 800; }
+  .modal button {
+    width: 100%;
+    padding: 12px;
+    background: #facc15; color: #0f172a;
+    border: none; border-radius: 10px;
+    font-weight: 900; font-size: 15px;
+    cursor: pointer; margin-top: 8px;
+  }
+
+  /* Slap overlay */
+  #slap-overlay {
+    background: rgba(80, 0, 0, 0.95);
+    flex-direction: column;
+  }
+  #slap-overlay .modal {
+    background: #1a0000;
+    border-color: #dc2626;
+  }
+  #slap-overlay h2 {
+    color: #ef4444; font-size: 34px;
+    animation: shake 0.6s infinite;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-3px, 2px); }
+    50% { transform: translate(3px, -2px); }
+    75% { transform: translate(-2px, -3px); }
+  }
+  #slap-overlay .hand { font-size: 72px; animation: slapAnim 0.4s ease-out; }
+  @keyframes slapAnim {
+    from { transform: scale(3) rotate(-30deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  @media (max-width: 500px) {
+    .card { width: 40px; height: 58px; }
+    .card .rank { font-size: 10px; }
+    .card .suit { font-size: 16px; }
+    #table { border-width: 6px; }
+    .player-slot .avatar { width: 36px; height: 36px; font-size: 18px; }
+  }
+</style>
 </head>
-<body class="min-h-screen text-white flex flex-col justify-between p-2 sm:p-4">
+<body>
 
-    <header class="w-full max-w-6xl mx-auto flex justify-between items-center bg-emerald-950/80 p-3 rounded-2xl border border-emerald-800 shadow-lg">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-pink-500 flex items-center justify-center text-2xl shadow-inner">🐷</div>
-            <h1 class="text-2xl font-bold title-font text-yellow-400">TRUCO SOLDADO <span class="text-xs text-white bg-red-600 px-2 py-1 rounded ml-2">Master AI</span></h1>
-        </div>
-        <div class="flex space-x-2">
-            <button onclick="engine.resetGame()" class="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg font-bold shadow transition">Reiniciar</button>
-        </div>
-    </header>
+<header>
+  <div>
+    <h1>🐷 TRUCO SOLDADO</h1>
+    <small>Truco do Sul (PR) · 1ª: 3t · 2ª: 2t · 3ª: 1t</small>
+  </div>
+  <div style="display:flex; gap:6px;">
+    <button class="btn" id="rules-btn">📜 Regras</button>
+    <button class="btn reset" id="reset-btn">🔄 Reset</button>
+  </div>
+</header>
 
-    <main class="w-full max-w-6xl mx-auto my-2 flex-grow flex flex-col justify-center items-center">
-        <div class="felt-table w-full aspect-[4/3] max-h-[620px] rounded-[40px] relative flex flex-col justify-between p-4 overflow-hidden">
-            
-            <!-- Badge Escura -->
-            <div id="escura-badge" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-purple-900 text-purple-200 border-2 border-purple-400 px-4 py-1 rounded-full text-sm font-bold uppercase shadow-lg z-20">
-                Modo Escuro Ativado
-            </div>
+<div id="scoreboard">
+  <div class="score-card" id="sc-0">
+    <div class="name">Porco 1 (Você)</div>
+    <div class="tentos" id="tentos-0">0</div>
+    <div class="zeradas">Zeradas: <span id="zeradas-0">0</span></div>
+  </div>
+  <div class="score-card" id="sc-1">
+    <div class="name">Porco 2 (IA 1)</div>
+    <div class="tentos" id="tentos-1">0</div>
+    <div class="zeradas">Zeradas: <span id="zeradas-1">0</span></div>
+  </div>
+  <div class="score-card" id="sc-2">
+    <div class="name">Porco 3 (IA 2)</div>
+    <div class="tentos" id="tentos-2">0</div>
+    <div class="zeradas">Zeradas: <span id="zeradas-2">0</span></div>
+  </div>
+</div>
 
-            <!-- IAs -->
-            <div id="player-1-area" class="absolute top-8 left-12 flex flex-col items-center z-10">
-                <div id="avatar-1" class="w-16 h-16 rounded-full bg-slate-800 border-4 border-slate-600 flex items-center justify-center text-3xl shadow-lg">🐗</div>
-                <span class="font-bold text-sm mt-1">Porco 2 (IA)</span>
-                <div class="bg-black/50 px-3 py-1 rounded-full text-xs mt-1 border border-white/10">
-                    Tentos: <span id="score-1" class="text-yellow-400 font-bold">0</span>/12
-                </div>
-                <div id="hand-1" class="flex -space-x-4 mt-2"></div>
-            </div>
+<div id="table">
+  <div id="escura-banner">🌑 MÃO NA ESCURA</div>
 
-            <div id="player-2-area" class="absolute top-8 right-12 flex flex-col items-center z-10">
-                <div id="avatar-2" class="w-16 h-16 rounded-full bg-slate-800 border-4 border-slate-600 flex items-center justify-center text-3xl shadow-lg">🐷</div>
-                <span class="font-bold text-sm mt-1">Porco 3 (IA)</span>
-                <div class="bg-black/50 px-3 py-1 rounded-full text-xs mt-1 border border-white/10">
-                    Tentos: <span id="score-2" class="text-yellow-400 font-bold">0</span>/12
-                </div>
-                <div id="hand-2" class="flex -space-x-4 mt-2"></div>
-            </div>
+  <div class="player-slot" id="slot-1">
+    <div class="avatar">🐗</div>
+    <span class="turn-tag">JOGANDO</span>
+    <div class="label">Porco 2</div>
+    <div class="hand" id="hand-1"></div>
+  </div>
 
-            <!-- Centro -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="absolute left-[30%] flex items-center -space-x-6 pointer-events-auto">
-                    <div class="w-12 h-20 card-back rounded-lg flex items-center justify-center text-xl shadow-2xl transform -rotate-6">🐷</div>
-                    <div id="vira-display" class="w-12 h-20 bg-white rounded-lg border-2 border-amber-400 flex flex-col justify-between p-1 shadow-2xl transform rotate-90 translate-x-4">
-                        <span id="vira-rank" class="text-xs font-bold text-red-600"></span>
-                        <span id="vira-suit" class="text-center text-xl text-red-600"></span>
-                        <span class="text-xs font-bold text-red-600 text-right"></span>
-                    </div>
-                </div>
+  <div class="player-slot" id="slot-2">
+    <div class="avatar">🐷</div>
+    <span class="turn-tag">JOGANDO</span>
+    <div class="label">Porco 3</div>
+    <div class="hand" id="hand-2"></div>
+  </div>
 
-                <div class="relative w-64 h-64 flex items-center justify-center">
-                    <div id="trick-badge" class="absolute top-0 bg-emerald-900/90 border border-emerald-500 text-yellow-300 text-xs font-bold px-3 py-1 rounded-full">VAZA 1: VALE 3 TENTOS</div>
-                    
-                    <div id="played-0" class="absolute bottom-4"></div>
-                    <div id="played-1" class="absolute top-8 left-0"></div>
-                    <div id="played-2" class="absolute top-8 right-0"></div>
-                </div>
-            </div>
+  <div class="player-slot" id="slot-0">
+    <div class="hand" id="hand-0"></div>
+    <div class="avatar">👑</div>
+    <span class="turn-tag">SUA VEZ</span>
+    <div class="label">Porco 1</div>
+  </div>
 
-            <!-- Humano -->
-            <div id="player-0-area" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
-                <div id="hand-0" class="flex -space-x-3 mb-2 pointer-events-auto"></div>
-                <div class="flex items-center gap-4 bg-slate-900/90 border-2 border-emerald-500/50 px-6 py-2 rounded-2xl shadow-xl">
-                    <div class="w-12 h-12 rounded-full bg-emerald-700 border-2 border-emerald-400 flex items-center justify-center text-2xl">👑</div>
-                    <div>
-                        <div class="font-bold text-sm text-yellow-300">Porco 1 (Você)</div>
-                        <div class="text-xs text-slate-300">
-                            Tentos: <span id="score-0" class="text-yellow-400 font-bold text-base">0</span>/12 | 
-                            Estouros: <span id="resets-0" class="text-red-400 font-bold">0</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="w-full max-w-6xl mx-auto flex gap-4">
-        <div id="game-log" class="flex-grow bg-emerald-950/90 border border-emerald-800 rounded-xl p-3 h-24 overflow-y-auto text-sm font-mono text-emerald-200 shadow-inner">
-            <div class="text-emerald-400 font-bold mb-1">> Log do Sistema:</div>
-        </div>
-        <button id="btn-next-hand" onclick="engine.startNewHand()" class="w-48 bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 font-black text-lg rounded-xl shadow-lg border-2 border-yellow-300 flex items-center justify-center transition hover:scale-105">
-            NOVA MÃO
-        </button>
-    </footer>
-
-    <!-- Overlay Castigo -->
-    <div id="slap-overlay" class="fixed inset-0 bg-red-950/90 z-50 flex flex-col items-center justify-center hidden">
-        <div class="text-center p-8 bg-black/80 border-4 border-red-600 rounded-3xl shadow-2xl relative">
-            <div class="text-8xl mb-4 shake">👋🐮</div>
-            <h1 class="text-4xl font-extrabold title-font text-red-500 mb-2">TAPA NA VACA!</h1>
-            <p id="slap-target" class="text-xl text-yellow-300 font-bold mb-6"></p>
-            <button onclick="engine.closeSlap()" class="px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-lg rounded-xl">Continuar</button>
-        </div>
+  <div id="center">
+    <div id="deck-area">
+      <div class="card back">🐷</div>
+      <div class="card" id="vira">
+        <span class="rank" id="vira-rank"></span>
+        <span class="suit" id="vira-suit"></span>
+        <span class="rank bottom" id="vira-rank-b"></span>
+      </div>
     </div>
 
-    <!-- Overlay Vitoria -->
-    <div id="victory-overlay" class="fixed inset-0 bg-black/90 z-40 flex flex-col items-center justify-center hidden">
-        <div class="text-center p-8 bg-emerald-950 border-4 border-yellow-400 rounded-3xl shadow-2xl">
-            <div class="text-7xl mb-2">🏆</div>
-            <h2 id="victory-title" class="text-3xl font-black title-font text-yellow-400">VENCEDOR!</h2>
-            <button onclick="engine.resetGame()" class="mt-6 px-8 py-3 bg-yellow-500 text-slate-950 font-black rounded-xl">JOGAR NOVAMENTE</button>
-        </div>
-    </div>
+    <div class="played-slot" id="played-0"></div>
+    <div class="played-slot" id="played-1"></div>
+    <div class="played-slot" id="played-2"></div>
 
-    <script src="game.js"></script>
+    <div id="trick-badge">VAZA 1 · 3 TENTOS</div>
+  </div>
+</div>
+
+<div id="log-area">
+  <div id="log"></div>
+  <button id="next-btn" disabled>▶ NOVA MÃO</button>
+</div>
+
+<!-- VICTORY OVERLAY -->
+<div class="overlay" id="victory-overlay">
+  <div class="modal">
+    <h2 id="victory-title">🏆 VITÓRIA!</h2>
+    <p id="victory-subtitle"></p>
+    <div class="final-scores" id="final-scores"></div>
+    <button onclick="Game.resetFull()">JOGAR NOVAMENTE</button>
+  </div>
+</div>
+
+<!-- SLAP OVERLAY -->
+<div class="overlay" id="slap-overlay">
+  <div class="modal">
+    <div class="hand">👋🐮</div>
+    <h2>TAPA NA VACA!</h2>
+    <p id="slap-text"></p>
+    <button onclick="Game.closeSlap()">Continuar</button>
+  </div>
+</div>
+
+<!-- RULES MODAL -->
+<div class="overlay" id="rules-overlay">
+  <div class="modal" style="max-width:560px; text-align:left;">
+    <h2 style="text-align:center;">📜 Regras</h2>
+    <div style="color:#d1fae5; font-size:13px; line-height:1.6;">
+      <p><b style="color:#fbbf24;">Baralho:</b> 40 cartas espanholas. Força: 4 &lt; 5 &lt; 6 &lt; 7 &lt; Q &lt; J &lt; K &lt; A &lt; 2 &lt; 3.</p>
+      <p><b style="color:#fbbf24;">Manilha:</b> carta seguinte à Vira na sequência. Qualquer manilha &gt; carta normal. Desempate: Ouros &lt; Espadas &lt; Copas &lt; Paus.</p>
+      <p><b style="color:#fbbf24;">Vazas:</b> 1ª = 3 tentos, 2ª = 2, 3ª = 1. Aplicado imediatamente. Empate = ninguém pontua.</p>
+      <p><b style="color:#fbbf24;">Estouro:</b> se a soma ≥ 13, zera na hora e continua.</p>
+      <p><b style="color:#fbbf24;">Vitória:</b> cravar exatamente 12 ao final da mão.</p>
+      <p><b style="color:#fbbf24;">Escura:</b> individual em 11, global se todos iguais (&gt;0).</p>
+      <p><b style="color:#fbbf24;">Castigo:</b> perdedor com 0 tentos ao fim da partida leva Tapa na Vaca.</p>
+    </div>
+    <button onclick="document.getElementById('rules-overlay').classList.remove('show')">Entendido</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   TRUCO SOLDADO — ENGINE
+   ========================================================================= */
+(function() {
+'use strict';
+
+/* ---------- CONSTANTES ---------- */
+// Sequência do Truco do Sul COM A (10 cartas)
+const RANK_ORDER = ['4','5','6','7','Q','J','K','A','2','3'];
+
+const SUITS = [
+  { key:'ouros',   symbol:'♦', color:'red',   power:1 },
+  { key:'espadas', symbol:'♠', color:'black', power:2 },
+  { key:'copas',   symbol:'♥', color:'red',   power:3 },
+  { key:'paus',    symbol:'♣', color:'black', power:4 }
+];
+
+const TRICK_POINTS = [3, 2, 1];
+const PLAYER_NAMES = ['Porco 1 (Você)', 'Porco 2 (IA 1)', 'Porco 3 (IA 2)'];
+const PLAYER_EMOJI = ['👑', '🐗', '🐷'];
+
+/* ---------- STATE ---------- */
+const G = {
+  tentos: [0,0,0],
+  zeradas: [0,0,0],
+  handNum: 0,
+  starter: 0,        // quem começa a mão
+  turn: 0,           // de quem é a vez
+
+  vira: null,
+  manilhaRank: null,
+  hands: [[],[],[]],
+  // Cartas na vaza atual: array de {player, card}
+  trickCards: [],
+  trickIndex: 0,     // 0,1,2
+
+  escuraIndividual: [false,false,false],
+  escuraGlobal: false,
+
+  matchActive: false,
+  processing: false,
+  // snapshot do placar ao final da mão (para decidir castigo)
+  lastTrickWinner: null
+};
+
+/* ---------- UTILITÁRIOS ---------- */
+function buildDeck() {
+  const deck = [];
+  for (const r of RANK_ORDER) {
+    for (const s of SUITS) {
+      deck.push({ rank:r, suit:s, id: r+'-'+s.key });
+    }
+  }
+  return deck;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getManilhaRank(viraRank) {
+  const idx = RANK_ORDER.indexOf(viraRank);
+  return RANK_ORDER[(idx + 1) % RANK_ORDER.length];
+}
+
+// Força: manilhas = 100 + suit.power (101-104); normais = index (0-9)
+function cardStrength(card, manilhaRank) {
+  if (card.rank === manilhaRank) return 100 + card.suit.power;
+  return RANK_ORDER.indexOf(card.rank);
+}
+
+function isManilha(card, manilhaRank) {
+  return card.rank === manilhaRank;
+}
+
+/* ---------- LOG ---------- */
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = 'l-' + type;
+  div.textContent = msg;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+/* =========================================================================
+   CONTROLE DE FLUXO
+   ========================================================================= */
+
+function resetFull() {
+  document.getElementById('victory-overlay').classList.remove('show');
+  document.getElementById('slap-overlay').classList.remove('show');
+  G.tentos = [0,0,0];
+  G.zeradas = [0,0,0];
+  G.handNum = 0;
+  G.starter = 0;
+  G.matchActive = true;
+  G.processing = false;
+  document.getElementById('log').innerHTML = '';
+  log('Nova partida iniciada!', 'win');
+  startNewHand();
+}
+
+function startNewHand() {
+  if (!G.matchActive) return;
+  if (G.processing) return;
+
+  G.handNum++;
+
+  // 1) Distribuição
+  const deck = shuffle(buildDeck());
+  G.vira = deck.pop();
+  G.manilhaRank = getManilhaRank(G.vira.rank);
+  G.hands = [
+    [deck.pop(), deck.pop(), deck.pop()],
+    [deck.pop(), deck.pop(), deck.pop()],
+    [deck.pop(), deck.pop(), deck.pop()]
+  ];
+
+  // 2) Escura
+  G.escuraIndividual = G.tentos.map(t => t === 11);
+  G.escuraGlobal = (G.tentos[0] === G.tentos[1] &&
+                    G.tentos[1] === G.tentos[2] &&
+                    G.tentos[0] > 0 &&
+                    G.tentos[0] < 12);
+
+  // 3) Estado da mão
+  G.trickIndex = 0;
+  G.trickCards = [];
+  G.turn = G.starter;
+  G.processing = false;
+
+  log(`--- Mão ${G.handNum} --- Vira: ${G.vira.rank}${G.vira.suit.symbol} · Manilha: ${G.manilhaRank}`, 'trick');
+
+  if (G.escuraGlobal) {
+    log('🌑 MÃO NA ESCURA GLOBAL (todos empatados)', 'win');
+  } else {
+    for (let i = 0; i < 3; i++) {
+      if (G.escuraIndividual[i]) {
+        log(`🌑 ${PLAYER_NAMES[i]} está na ESCURA (11 tentos)`, 'win');
+      }
+    }
+  }
+
+  renderAll();
+  updateTurnUI();
+
+  // Se o starter é IA, ela joga
+  if (G.turn !== 0) scheduleAI();
+}
+
+/* ---------- JOGAR CARTA ---------- */
+function playCard(player, cardIndex) {
+  if (!G.matchActive || G.processing) return;
+  if (player !== G.turn) return;
+  const hand = G.hands[player];
+  if (cardIndex < 0 || cardIndex >= hand.length) return;
+
+  const card = hand.splice(cardIndex, 1)[0];
+  G.trickCards.push({ player, card });
+
+  // Revela carta na mesa (mesmo se estava escondida por escura)
+  renderPlayed(player, card);
+
+  // Log: se estava na escura, revelar agora
+  const wasEscura = G.escuraGlobal || G.escuraIndividual[player];
+  const reveal = wasEscura ? ' (revelada da escura)' : '';
+  log(`${PLAYER_NAMES[player]} jogou ${card.rank}${card.suit.symbol}${reveal}`, 'info');
+
+  renderHand(player);
+
+  if (G.trickCards.length === 3) {
+    G.processing = true;
+    setTimeout(resolveTrick, 900);
+  } else {
+    G.turn = (G.turn + 1) % 3;
+    updateTurnUI();
+    if (G.turn !== 0) scheduleAI();
+  }
+}
+
+/* ---------- RESOLVER VAZA ---------- */
+function resolveTrick() {
+  const trickNum = G.trickIndex + 1;
+  const points = TRICK_POINTS[G.trickIndex];
+
+  // Calcular maior força
+  let maxStr = -1;
+  let winners = [];
+  for (const { player, card } of G.trickCards) {
+    const s = cardStrength(card, G.manilhaRank);
+    if (s > maxStr) { maxStr = s; winners = [player]; }
+    else if (s === maxStr) { winners.push(player); }
+  }
+
+  if (winners.length > 1) {
+    log(`Vaza ${trickNum}: EMPATE — ninguém pontua.`, 'trick');
+  } else {
+    const w = winners[0];
+    log(`Vaza ${trickNum} → ${PLAYER_NAMES[w]} ganha +${points} tento(s)`, 'win');
+
+    // 4) SOMA IMEDIATA
+    G.tentos[w] += points;
+
+    // 5) ESTOURO IMEDIATO
+    if (G.tentos[w] >= 13) {
+      log(`💥 ESTOURO! ${PLAYER_NAMES[w]} atingiu ${G.tentos[w]} e voltou a 0.`, 'bust');
+      G.tentos[w] = 0;
+      G.zeradas[w]++;
+    }
+  }
+
+  updateScoreboard();
+  G.trickIndex++;
+
+  // Próxima vaza ou fim de mão
+  setTimeout(() => {
+    clearPlayedUI();
+    G.trickCards = [];
+
+    if (G.trickIndex < 3) {
+      // Quem ganhou a vaza começa a próxima. Se empate, mantém o starter.
+      if (winners.length === 1) {
+        G.turn = winners[0];
+      } else {
+        G.turn = G.starter;
+      }
+      G.processing = false;
+      updateTrickBadge();
+      updateTurnUI();
+      if (G.turn !== 0) scheduleAI();
+    } else {
+      finishHand();
+    }
+  }, 950);
+}
+
+/* ---------- FIM DA MÃO ---------- */
+function finishHand() {
+  G.processing = false;
+  G.trickIndex = 0;
+
+  // Verifica quem cravou 12
+  const winners = [];
+  for (let i = 0; i < 3; i++) {
+    if (G.tentos[i] === 12) winners.push(i);
+  }
+
+  if (winners.length > 0) {
+    // Fim de partida
+    G.matchActive = false;
+    endMatch(winners[0]);
+  } else {
+    // Rotaciona starter
+    G.starter = (G.starter + 1) % 3;
+    document.getElementById('next-btn').disabled = false;
+    log('Mão encerrada. Clique em NOVA MÃO.', 'info');
+  }
+
+  updateScoreboard();
+}
+
+/* ---------- FIM DE PARTIDA ---------- */
+function endMatch(winnerId) {
+  log(`🏆 ${PLAYER_NAMES[winnerId]} CRAVOU 12 E VENCEU A PARTIDA!`, 'win');
+
+  // Verifica castigo: perdedores com 0 tentos
+  const punished = [];
+  for (let i = 0; i < 3; i++) {
+    if (i !== winnerId && G.tentos[i] === 0) punished.push(i);
+  }
+
+  if (punished.length > 0) {
+    showSlap(punished, winnerId);
+  } else {
+    showVictory(winnerId);
+  }
+}
+
+function showSlap(punishedIds, winnerId) {
+  const names = punishedIds.map(i => PLAYER_NAMES[i]).join(' e ');
+  document.getElementById('slap-text').textContent =
+    `${names} terminou com 0 tentos e levou o Tapa na Vaca!`;
+  document.getElementById('slap-overlay').classList.add('show');
+  document.getElementById('slap-overlay').dataset.winner = winnerId;
+}
+
+function closeSlap() {
+  document.getElementById('slap-overlay').classList.remove('show');
+  const winner = parseInt(document.getElementById('slap-overlay').dataset.winner, 10);
+  showVictory(winner);
+}
+
+function showVictory(winnerId) {
+  document.getElementById('victory-title').textContent = '🏆 ' + PLAYER_NAMES[winnerId].toUpperCase();
+  document.getElementById('victory-subtitle').textContent = 'Cravou 12 tentos!';
+
+  const fs = document.getElementById('final-scores');
+  fs.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const row = document.createElement('div');
+    if (i === winnerId) row.className = 'winner';
+    row.innerHTML = `<span>${PLAYER_NAMES[i]}</span><span>${G.tentos[i]} tentos · ${G.zeradas[i]} zeradas</span>`;
+    fs.appendChild(row);
+  }
+  document.getElementById('victory-overlay').classList.add('show');
+}
+
+/* =========================================================================
+   IA
+   ========================================================================= */
+
+function scheduleAI() {
+  if (G.turn === 0) return;
+  setTimeout(() => executeAI(G.turn), 750);
+}
+
+function executeAI(player) {
+  if (!G.matchActive || G.processing) return;
+  if (G.turn !== player) return;
+  const hand = G.hands[player];
+  if (!hand.length) return;
+
+  const escura = G.escuraGlobal || G.escuraIndividual[player];
+  let idx;
+
+  if (escura) {
+    // Escolha cega
+    idx = Math.floor(Math.random() * hand.length);
+  } else {
+    idx = chooseCardAI(player, hand);
+  }
+
+  playCard(player, idx);
+}
+
+function chooseCardAI(player, hand) {
+  const manilha = G.manilhaRank;
+  // Avalia força de cada carta
+  const evaluated = hand.map((c, i) => ({ i, c, s: cardStrength(c, manilha) }));
+  evaluated.sort((a, b) => a.s - b.s); // menor → maior
+
+  const played = G.trickCards;
+
+  // Primeiro a jogar → carta mais fraca
+  if (played.length === 0) {
+    return evaluated[0].i;
+  }
+
+  // Maior força na mesa
+  let maxTable = -1;
+  let leader = -1;
+  for (const { player: p, card } of played) {
+    const s = cardStrength(card, manilha);
+    if (s > maxTable) { maxTable = s; leader = p; }
+  }
+
+  // COALIZÃO: se o líder é "alvo" (8 a 11 tentos) e a IA é a 2ª a jogar,
+  // jogar carta fraca DE PROPÓSITO para abrir espaço para o 3º roubar.
+  const leaderIsTarget = (leader !== -1) &&
+    G.tentos[leader] >= 8 && G.tentos[leader] <= 11;
+
+  if (played.length === 1 && leaderIsTarget) {
+    // Escolhe a MAIS FRACA (mesmo que pudesse vencer)
+    return evaluated[0].i;
+  }
+
+  // Jogo normal: menor carta que supere a mesa
+  const winners = evaluated.filter(e => e.s > maxTable);
+  if (winners.length > 0) return winners[0].i;
+
+  // Não dá para vencer: descarta a mais fraca
+  return evaluated[0].i;
+}
+
+/* =========================================================================
+   RENDERIZAÇÃO
+   ========================================================================= */
+
+function renderAll() {
+  renderVira();
+  for (let i = 0; i < 3; i++) renderHand(i);
+  clearPlayedUI();
+  updateTrickBadge();
+  updateScoreboard();
+  updateEscuraBanner();
+}
+
+function renderVira() {
+  const v = G.vira;
+  const rankEl = document.getElementById('vira-rank');
+  const rankElB = document.getElementById('vira-rank-b');
+  const suitEl = document.getElementById('vira-suit');
+  const cardEl = document.getElementById('vira');
+
+  rankEl.textContent = v.rank;
+  rankElB.textContent = v.rank;
+  suitEl.textContent = v.suit.symbol;
+
+  cardEl.classList.remove('red','black');
+  cardEl.classList.add(v.suit.color);
+}
+
+function renderHand(player) {
+  const container = document.getElementById('hand-' + player);
+  container.innerHTML = '';
+  const hand = G.hands[player];
+  const escura = G.escuraGlobal || G.escuraIndividual[player];
+  const canPlay = (player === 0) && (G.turn === 0) && !G.processing && G.matchActive;
+
+  hand.forEach((card, i) => {
+    const el = document.createElement('div');
+
+    if (player === 0) {
+      if (escura) {
+        // Carta virada (não vê)
+        el.className = 'card back';
+        el.textContent = '🐷';
+      } else {
+        el.className = 'card';
+        if (isManilha(card, G.manilhaRank)) el.classList.add('manilha');
+        el.classList.add(card.suit.color);
+        el.innerHTML = `
+          <span class="rank">${card.rank}</span>
+          <span class="suit">${card.suit.symbol}</span>
+          <span class="rank bottom">${card.rank}</span>`;
+      }
+      if (canPlay) {
+        el.classList.add('playable');
+        el.addEventListener('click', () => playCard(0, i));
+      }
+    } else {
+      // IA: verso sempre
+      el.className = 'card back';
+      el.textContent = '🐷';
+    }
+    container.appendChild(el);
+  });
+}
+
+function renderPlayed(player, card) {
+  const slot = document.getElementById('played-' + player);
+  slot.innerHTML = '';
+  const el = document.createElement('div');
+  el.className = 'card played';
+  if (isManilha(card, G.manilhaRank)) el.classList.add('manilha');
+  el.classList.add(card.suit.color);
+  el.innerHTML = `
+    <span class="rank">${card.rank}</span>
+    <span class="suit">${card.suit.symbol}</span>
+    <span class="rank bottom">${card.rank}</span>`;
+  slot.appendChild(el);
+}
+
+function clearPlayedUI() {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('played-' + i).innerHTML = '';
+  }
+}
+
+function updateTrickBadge() {
+  const el = document.getElementById('trick-badge');
+  if (G.trickIndex >= 3) {
+    el.textContent = 'MÃO ENCERRADA';
+    return;
+  }
+  const pts = TRICK_POINTS[G.trickIndex];
+  el.textContent = `VAZA ${G.trickIndex + 1} · ${pts} TENTO${pts > 1 ? 'S' : ''}`;
+}
+
+function updateTurnUI() {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('slot-' + i).classList.toggle('turn', i === G.turn);
+    document.getElementById('sc-' + i).classList.toggle('active', i === G.turn);
+  }
+  // Re-renderiza a mão do humano para atualizar clicabilidade
+  renderHand(0);
+}
+
+function updateScoreboard() {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('tentos-' + i).textContent = G.tentos[i];
+    document.getElementById('zeradas-' + i).textContent = G.zeradas[i];
+  }
+}
+
+function updateEscuraBanner() {
+  const banner = document.getElementById('escura-banner');
+  if (G.escuraGlobal) {
+    banner.textContent = '🌑 MÃO NA ESCURA GLOBAL';
+    banner.classList.add('show');
+  } else {
+    const anyInd = G.escuraIndividual.some(v => v);
+    if (anyInd) {
+      const names = [];
+      for (let i = 0; i < 3; i++) if (G.escuraIndividual[i]) names.push(PLAYER_NAMES[i]);
+      banner.textContent = '🌑 ESCURA: ' + names.join(', ');
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+}
+
+/* =========================================================================
+   EXPOR
+   ========================================================================= */
+window.Game = {
+  resetFull,
+  closeSlap,
+  startNewHand,
+  playCard
+};
+
+/* ---------- BINDINGS ---------- */
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('Reiniciar a partida? Todos os pontos serão zerados.')) resetFull();
+});
+document.getElementById('rules-btn').addEventListener('click', () => {
+  document.getElementById('rules-overlay').classList.add('show');
+});
+document.getElementById('next-btn').addEventListener('click', () => {
+  document.getElementById('next-btn').disabled = true;
+  startNewHand();
+});
+document.getElementById('rules-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'rules-overlay') e.target.classList.remove('show');
+});
+
+/* ---------- START ---------- */
+resetFull();
+
+})();
+</script>
 </body>
 </html>
