@@ -1,17 +1,12 @@
-// ============================================================
-// TRUCO SOLDADO — A Versão Definitiva
-// ============================================================
-
 const NAIPES = ["ouro", "espada", "copas", "paus"]; 
 const VALORES = ["4", "5", "6", "7", "Q", "J", "K", "A", "2", "3"];
-const FORCA_NORMAL = ["3", "2", "A", "K", "J", "Q", "7", "6", "5", "4"]; // Ordem do Sul (Q < J < K)
+const FORCA_NORMAL = ["3", "2", "A", "K", "J", "Q", "7", "6", "5", "4"];
 const SIMBOLOS = { ouro: "♦", espada: "♠", copas: "♥", paus: "♣" };
 
 const PONTOS_POR_VAZA = [3, 2, 1];
 const NOMES = ["Porco Verde", "Porco Mulato", "Porco Anjo"];
 const HUMANO = 0;
 
-// --- Funções Auxiliares ---
 function criarBaralho() {
   const b = [];
   for (const naipe of NAIPES) for (const valor of VALORES) b.push({ valor, naipe });
@@ -42,7 +37,6 @@ function rotuloCarta(carta) {
   return `${carta.valor}${SIMBOLOS[carta.naipe] || ""}`;
 }
 
-// --- Estado Global ---
 const state = {
   tentos: [0, 0, 0],
   zeradas: [0, 0, 0],
@@ -55,9 +49,9 @@ const state = {
   vazaAtual: 0,
   vazasGanhas: [0, 0, 0],
   jogadorInicial: -1,
-  fase: "jogando", // "jogando" | "fimMao" | "castigo" | "fimPartida"
+  fase: "jogando",
   mensagem: "",
-  castigadoAtual: null,
+  castigadosFinais: [],
 };
 
 function recalcularEscura() {
@@ -72,12 +66,12 @@ function emEscura(i) {
   return escuraGlobal || escuraIndividual[i];
 }
 
-// --- Fluxo de Jogo ---
 function novaMao() {
-  if (state.fase === "fimPartida") {
+  if (state.fase === "fimPartida" || state.fase === "castigo") {
     state.tentos = [0, 0, 0];
     state.zeradas = [0, 0, 0];
     state.jogadorInicial = -1;
+    state.fase = "jogando";
   }
 
   state.baralho = embaralhar(criarBaralho());
@@ -140,7 +134,7 @@ function jogadaIA(jogador) {
   let indice;
 
   if (escura) {
-    indice = Math.floor(Math.random() * mao.length); // Joga aleatório se estiver na escura
+    indice = Math.floor(Math.random() * mao.length);
   } else {
     const cartasNaMesa = state.mesa
       .map((c, idx) => (c && idx !== jogador ? c : null))
@@ -153,9 +147,9 @@ function jogadaIA(jogador) {
       .sort((a, b) => a.forca - b.forca);
 
     if (maiorNaMesa < 0) {
-      indice = ordenadas[0].idx; // Se é o primeiro a jogar, tenta a mais fraca
+      indice = ordenadas[0].idx;
     } else {
-      const vencedora = ordenadas.find(o => o.forca > maiorNaMesa); // Tenta achar a menor que ganha
+      const vencedora = ordenadas.find(o => o.forca > maiorNaMesa);
       indice = vencedora ? vencedora.idx : ordenadas[0].idx;
     }
   }
@@ -175,7 +169,6 @@ function resolverVaza() {
     state.vazasGanhas[vencedor]++;
     const pontos = PONTOS_POR_VAZA[state.vazaAtual] ?? 0;
     
-    // Soma os tentos na vaza, mas o jogo não acaba aqui se bater 12. Deixa a mão terminar.
     if (pontos > 0) state.tentos[vencedor] += pontos;
     
     state.mensagem = `${NOMES[vencedor]} ganhou a ${state.vazaAtual + 1}ª vaza (+${pontos})`;
@@ -218,45 +211,52 @@ function resolverMao() {
 }
 
 function verificarFimDeJogo() {
-  // Checa se alguém passou de 13 e estourou
   for (let i = 0; i < 3; i++) {
     if (state.tentos[i] >= 13) {
       state.tentos[i] = 0;
       state.zeradas[i]++;
-      state.castigadoAtual = i;
-      state.fase = "castigo";
-      state.mensagem = `${NOMES[i]} estourou e foi para o ZERO!`;
-      return;
+      state.mensagem = `${NOMES[i]} estourou (13) e voltou pro ZERO!`;
     }
   }
 
-  // Checa se alguém fez 12 e ganhou a partida
   for (let i = 0; i < 3; i++) {
     if (state.tentos[i] >= 12) {
       state.fase = "fimPartida";
-      state.mensagem = `🏆 ${NOMES[i]} fez 12 tentos e VENCEU A PARTIDA!`;
+      state.mensagem = `${NOMES[i]} fez 12 tentos e VENCEU A PARTIDA!`;
+      
+      state.castigadosFinais = [];
+      for (let j = 0; j < 3; j++) {
+        if (j !== i && state.tentos[j] === 0) {
+          state.castigadosFinais.push(j);
+        }
+      }
+
+      if (state.castigadosFinais.length > 0) {
+        state.fase = "castigo";
+      }
       return;
     }
   }
 }
 
-// --- Tapa na Vaca (Castigo) ---
-function mostrarTapa(jogador) {
+function mostrarTapa(jogadores) {
   const overlay = document.getElementById("tapa-overlay");
   const texto = document.getElementById("tapa-quem");
-  texto.innerHTML = `<strong>${NOMES[jogador]}</strong> estourou e foi para o ZERO!<br>Pode ir dar o tapa na vaca! 🐄👋`;
+  
+  const nomes = jogadores.map(j => `<strong>${NOMES[j]}</strong>`).join(" e ");
+  texto.innerHTML = `A partida acabou!<br>${nomes} terminaram com ZERO.<br>Devem pagar o castigo na vaca!`;
+  
   overlay.classList.remove("escondido");
 }
 
 document.getElementById("btn-fechar-tapa").addEventListener("click", () => {
   document.getElementById("tapa-overlay").classList.add("escondido");
-  state.fase = "fimMao";
-  state.mensagem = `O castigo foi aplicado. Preparem a próxima mão!`;
-  verificarFimDeJogo(); 
+  const idxVencedor = state.tentos.findIndex(t => t >= 12);
+  state.fase = "fimPartida"; 
+  state.mensagem = `O castigo foi aplicado. Vitória do ${NOMES[idxVencedor]}!`;
   render();
 });
 
-// --- Renderização Visual ---
 function render() {
   renderStatus();
   renderBaralhoVira();
@@ -264,9 +264,9 @@ function render() {
   renderCartasJogadas();
   renderPlacar();
   
-  if (state.fase === "castigo" && state.castigadoAtual !== null) {
+  if (state.fase === "castigo") {
     if (document.getElementById("tapa-overlay").classList.contains("escondido")) {
-      mostrarTapa(state.castigadoAtual);
+      mostrarTapa(state.castigadosFinais);
     }
   }
 }
@@ -274,7 +274,7 @@ function render() {
 function renderStatus() {
   const el = document.getElementById("status-escura");
   
-  if (state.fase === "fimPartida") {
+  if (state.fase === "fimPartida" || state.fase === "castigo") {
     el.textContent = state.mensagem;
     el.style.color = "var(--ok)";
     return;
@@ -284,11 +284,11 @@ function renderStatus() {
   const { escuraGlobal } = recalcularEscura();
   
   if (escuraGlobal) {
-    el.textContent = "🌑 ESCURA GLOBAL — empate dos três!";
+    el.textContent = "ESCURA GLOBAL — empate dos três!";
   } else {
     const ind = state.tentos.map((t, i) => (t === 11 ? NOMES[i] : null)).filter(Boolean);
     el.textContent = ind.length
-      ? `🌑 Escura individual: ${ind.join(", ")} (11 tentos)`
+      ? `Escura individual: ${ind.join(", ")} (11 tentos)`
       : (state.mensagem || "");
   }
 }
@@ -398,12 +398,8 @@ function criarCartaEl(carta, { virada = false, jogada = false, onClick = null } 
   if (virada) {
     div.classList.add("virada");
   } else {
-    // Adiciona a cor real do baralho
-    if (carta.naipe === "copas" || carta.naipe === "ouro") {
-      div.classList.add("vermelha");
-    } else {
-      div.classList.add("preta");
-    }
+    if (carta.naipe === "copas" || carta.naipe === "ouro") div.classList.add("vermelha");
+    else div.classList.add("preta");
     div.textContent = rotuloCarta(carta);
   }
 
@@ -413,7 +409,6 @@ function criarCartaEl(carta, { virada = false, jogada = false, onClick = null } 
   return div;
 }
 
-// --- Inicialização e Eventos dos Botões ---
 document.getElementById("btn-nova-mao").addEventListener("click", () => {
   if (state.fase === "castigo" || state.fase === "fimPartida") return; 
   novaMao();
