@@ -13,11 +13,21 @@
   </header>
 
   <main>
+    <div id="vira" class="vira"></div>
+
+    <!-- Mesa circular -->
+    <div id="mesa-circular" class="mesa-circular">
+      <!-- Posições fixas: humano embaixo, IA1 esquerda-cima, IA2 direita-cima -->
+      <div class="assento assento-humano" id="assento-0"></div>
+      <div class="assento assento-ia1" id="assento-1"></div>
+      <div class="assento assento-ia2" id="assento-2"></div>
+
+      <!-- Centro da mesa: cartas jogadas na vaza -->
+      <div class="centro" id="centro"></div>
+    </div>
+
+    <!-- Placar compacto -->
     <section id="placar" class="placar"></section>
-
-    <section id="mesa" class="mesa"></section>
-
-    <section id="maos" class="maos"></section>
 
     <section id="controles" class="controles">
       <button id="btn-nova-mao">Nova mão</button>

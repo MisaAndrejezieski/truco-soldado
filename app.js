@@ -1,48 +1,17 @@
 // ============================================================
-// TRUCO SOLDADO — protótipo hotseat
-// Regras implementadas:
-//  - 3 jogadores, 3 cartas cada
-//  - Força: 4♦ (menor) ... Gato (maior)
-//  - Rodadas valem 3 / 2 / 1 tento
-//  - 12 tentos = vitória | 13 = estoura e volta a 0
-//  - Escura global quando os TRÊS estão com o MESMO placar
-//  - Escura individual quando o jogador está com 11
-//    (em escura ele não vê as próprias cartas: clica às cegas)
-//  - Registro manual de tapas (corte duplo / carta errada)
+// TRUCO SOLDADO — v1: humano vs 2 IAs independentes (mesa circular)
 // ============================================================
 
-// ---------- Baralho e força ----------
-// Ajuste a ordem conforme o truco soldado de vocês.
-// 4 de ouro é a MENOR, "Gato" é a MAIOR.
 const NAIPES = ["ouro", "espada", "copas", "paus"];
 const VALORES = ["4", "5", "6", "7", "Q", "J", "K", "A", "2", "3"];
-
-// Ranking do truco soldado: índice maior = carta mais forte.
-// Ordem base: 4 < 5 < 6 < 7 < Q < J < K < A < 2 < 3 < ... (ajuste conforme vocês)
-// O "Gato" é representado pela carta especial "GATO".
-function forcaDaCarta(carta) {
-  if (carta.valor === "GATO") return 999; // maior de todas
-  // 4 de ouro é a menor de todas
-  if (carta.valor === "4" && carta.naipe === "ouro") return -1;
-  const idx = VALORES.indexOf(carta.valor);
-  const base = idx * 10;
-  // desempate por naipe (ajuste se o truco soldado de vocês tiver ordem de naipe)
-  const naipeIdx = NAIPES.indexOf(carta.naipe);
-  return base + naipeIdx;
-}
+const FORCA_NORMAL = ["3", "2", "A", "K", "J", "Q", "7", "6", "5", "4"];
+const SIMBOLOS = { ouro: "♦", espada: "♠", copas: "♥", paus: "♣" };
 
 function criarBaralho() {
-  const baralho = [];
-  for (const naipe of NAIPES) {
-    for (const valor of VALORES) {
-      baralho.push({ valor, naipe });
-    }
-  }
-  // Carta especial "Gato" (representação simbólica; ajuste conforme o baralho de vocês)
-  baralho.push({ valor: "GATO", naipe: "especial" });
-  return baralho;
+  const b = [];
+  for (const naipe of NAIPES) for (const valor of VALORES) b.push({ valor, naipe });
+  return b;
 }
-
 function embaralhar(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -51,94 +20,183 @@ function embaralhar(arr) {
   }
   return a;
 }
+function valorDaManilha(vira) {
+  const idx = VALORES.indexOf(vira.valor);
+  return VALORES[(idx + 1) % VALORES.length];
+}
+function forcaDaCarta(carta, manilhaValor) {
+  if (carta.valor === manilhaValor) {
+    return 1000 + NAIPES.indexOf(carta.naipe);
+  }
+  const idx = FORCA_NORMAL.indexOf(carta.valor);
+  return 100 + (9 - idx);
+}
+function rotuloCarta(carta) { return `${carta.valor}${SIMBOLOS[carta.naipe]}`; }
 
-// ---------- Estado ----------
-const JOGADORES = ["Jogador 1", "Jogador 2", "Jogador 3"];
+const NOMES = ["Você", "IA 1", "IA 2"];
+const HUMANO = 0;
 
 const state = {
   tentos: [0, 0, 0],
-  zeradas: [0, 0, 0], // Ranking da Vaca
+  zeradas: [0, 0, 0],
   tapas: [0, 0, 0],
-  maos: [[], [], []],       // cartas na mão de cada jogador
-  mesa: [null, null, null], // carta jogada na rodada atual (ou null)
-  rodada: 0,                // 0, 1, 2
-  jogadorInicial: 0,        // quem começa a mão (rotaciona)
   tapaLog: [],
-  vencedorMao: null,        // índice do jogador que ganhou a mão (null = em andamento)
+  baralho: [],
+  vira: null,
+  manilhaValor: null,
+  maos: [[], [], []],
+  mesa: [null, null, null],
+  quemJogou: [false, false, false],
+  vazaAtual: 0,
+  vazasGanhas: [0, 0, 0],
+  historicoVazas: [],
+  jogadorInicial: -1,
+  fase: "jogando",
+  vencedorMao: null,
+  mensagem: "",
 };
 
-// ---------- Escura ----------
 function recalcularEscura() {
   const [a, b, c] = state.tentos;
-  const escuraGlobal = a === b && b === c;
-  const escuraIndividual = state.tentos.map(t => t === 11);
-  return { escuraGlobal, escuraIndividual };
+  return {
+    escuraGlobal: a === b && b === c,
+    escuraIndividual: state.tentos.map(t => t === 11),
+  };
 }
-
 function emEscura(i) {
   const { escuraGlobal, escuraIndividual } = recalcularEscura();
   return escuraGlobal || escuraIndividual[i];
 }
 
-// ---------- Fluxo de jogo ----------
 function novaMao() {
-  const baralho = embaralhar(criarBaralho());
+  state.baralho = embaralhar(criarBaralho());
   state.maos = [[], [], []];
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      state.maos[j].push(baralho.pop());
-    }
-  }
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++)
+      state.maos[j].push(state.baralho.pop());
+
+  state.vira = state.baralho.pop();
+  state.manilhaValor = valorDaManilha(state.vira);
+
   state.mesa = [null, null, null];
-  state.rodada = 0;
+  state.quemJogou = [false, false, false];
+  state.vazaAtual = 0;
+  state.vazasGanhas = [0, 0, 0];
+  state.historicoVazas = [];
   state.vencedorMao = null;
+  state.fase = "jogando";
+  state.mensagem = "";
+
+  state.jogadorInicial = (state.jogadorInicial + 1) % 3;
+
   render();
+  setTimeout(talvezIAsJoguem, 500);
 }
 
 function jogarCarta(jogador, indiceCarta) {
-  if (state.vencedorMao !== null) return;
-  if (state.mesa[jogador] !== null) return; // já jogou nesta rodada
+  if (state.fase !== "jogando") return;
+  if (state.quemJogou[jogador]) return;
   if (state.maos[jogador].length === 0) return;
 
   const carta = state.maos[jogador].splice(indiceCarta, 1)[0];
   state.mesa[jogador] = carta;
+  state.quemJogou[jogador] = true;
 
   render();
 
-  // Se todos jogaram, resolve a rodada
-  if (state.mesa.every(c => c !== null)) {
-    setTimeout(resolverRodada, 600);
+  if (state.quemJogou.every(Boolean)) {
+    setTimeout(resolverVaza, 600);
+  } else {
+    setTimeout(talvezIAsJoguem, 400);
   }
 }
 
-function resolverRodada() {
-  // Compara as 3 cartas jogadas
-  const forcas = state.mesa.map(c => forcaDaCarta(c));
-  const maxForca = Math.max(...forcas);
-  const vencedores = forcas
-    .map((f, i) => (f === maxForca ? i : -1))
-    .filter(i => i !== -1);
+function talvezIAsJoguem() {
+  if (state.fase !== "jogando") return;
+  for (let i = 1; i <= 2; i++) {
+    if (!state.quemJogou[i]) {
+      setTimeout(() => jogadaIA(i), 400 + i * 200);
+    }
+  }
+}
 
-  // Empate na rodada: por enquanto, ninguém pontua (ajuste se quiserem regra própria)
-  if (vencedores.length > 1) {
-    state.tapaLog.unshift(`Rodada ${state.rodada + 1}: empate entre ${vencedores.map(i => JOGADORES[i]).join(", ")}`);
-    state.rodada++;
-    state.mesa = [null, null, null];
-    if (state.rodada >= 3) finalizarMao(null);
-    else render();
-    return;
+function jogadaIA(jogador) {
+  if (state.fase !== "jogando") return;
+  if (state.quemJogou[jogador]) return;
+  if (state.maos[jogador].length === 0) return;
+
+  const mao = state.maos[jogador];
+  const escura = emEscura(jogador);
+  let indice;
+
+  if (escura) {
+    indice = Math.floor(Math.random() * mao.length);
+  } else {
+    const cartasNaMesa = state.mesa
+      .map((c, idx) => (c && idx !== jogador ? c : null))
+      .filter(Boolean);
+    const forcas = cartasNaMesa.map(c => forcaDaCarta(c, state.manilhaValor));
+    const maiorNaMesa = forcas.length ? Math.max(...forcas) : -1;
+
+    const ordenadas = mao
+      .map((c, idx) => ({ idx, forca: forcaDaCarta(c, state.manilhaValor) }))
+      .sort((a, b) => a.forca - b.forca);
+
+    if (maiorNaMesa < 0) {
+      indice = ordenadas[0].idx;
+    } else {
+      const vencedora = ordenadas.find(o => o.forca > maiorNaMesa);
+      indice = vencedora ? vencedora.idx : ordenadas[0].idx;
+    }
   }
 
-  const vencedor = vencedores[0];
-  const pontos = [3, 2, 1][state.rodada];
-  aplicarTentos(vencedor, pontos);
+  jogarCarta(jogador, indice);
+}
 
-  state.tapaLog.unshift(`Rodada ${state.rodada + 1}: ${JOGADORES[vencedor]} levou ${pontos} tento(s)`);
-  state.rodada++;
+function resolverVaza() {
+  const forcas = state.mesa.map(c => forcaDaCarta(c, state.manilhaValor));
+  const maxForca = Math.max(...forcas);
+  const vencedores = forcas.map((f, i) => (f === maxForca ? i : -1)).filter(i => i !== -1);
+
+  let vencedor = null;
+  if (vencedores.length === 1) {
+    vencedor = vencedores[0];
+    state.vazasGanhas[vencedor]++;
+    state.mensagem = `${NOMES[vencedor]} ganhou a ${state.vazaAtual + 1}ª vaza`;
+  } else {
+    state.mensagem = `Empate na ${state.vazaAtual + 1}ª vaza (ninguém pontua)`;
+  }
+
+  state.historicoVazas.push({ vencedor, empate: vencedores.length > 1 });
+  state.vazaAtual++;
+
+  if (state.vazaAtual >= 3) { resolverMao(); return; }
+
+  state.jogadorInicial = vencedor !== null ? vencedor : state.jogadorInicial;
   state.mesa = [null, null, null];
+  state.quemJogou = [false, false, false];
 
-  if (state.rodada >= 3) finalizarMao(vencedor);
-  else render();
+  render();
+  setTimeout(talvezIAsJoguem, 500);
+}
+
+function resolverMao() {
+  const [g1, g2, g3] = state.vazasGanhas;
+  let vencedor = null;
+  if (g1 > g2 && g1 > g3) vencedor = 0;
+  else if (g2 > g1 && g2 > g3) vencedor = 1;
+  else if (g3 > g1 && g3 > g2) vencedor = 2;
+
+  state.vencedorMao = vencedor;
+  state.fase = "fimMao";
+
+  if (vencedor !== null) aplicarTentos(vencedor, 1);
+
+  state.mensagem = vencedor !== null
+    ? `${NOMES[vencedor]} ganhou a mão`
+    : "Mão empatada — ninguém pontua";
+
+  render();
 }
 
 function aplicarTentos(jogador, pontos) {
@@ -146,104 +204,124 @@ function aplicarTentos(jogador, pontos) {
   if (state.tentos[jogador] >= 13) {
     state.tentos[jogador] = 0;
     state.zeradas[jogador]++;
-    state.tapaLog.unshift(`💥 ${JOGADORES[jogador]} estourou (13 → 0) e foi zerado! Castigo na vaca 🐄👋`);
+    state.tapaLog.unshift(`💥 ${NOMES[jogador]} estourou (13 → 0)! Castigo na vaca 🐄👋`);
   } else if (state.tentos[jogador] === 12) {
-    state.tapaLog.unshift(`🏆 ${JOGADORES[jogador]} fez 12 tentos — vitória da partida!`);
+    state.tapaLog.unshift(`🏆 ${NOMES[jogador]} fez 12 tentos — vitória!`);
   }
 }
 
-function finalizarMao(vencedor) {
-  state.vencedorMao = vencedor;
-  render();
-}
-
-// ---------- Tapas ----------
 function registrarTapa(jogador, motivo) {
   state.tapas[jogador]++;
   const label = motivo === "corte-duplo" ? "cortou duas cartas" : "deu carta errada";
-  state.tapaLog.unshift(`🐄👋 Tapa: ${JOGADORES[jogador]} ${label}`);
+  state.tapaLog.unshift(`🐄👋 Tapa: ${NOMES[jogador]} ${label}`);
   render();
 }
 
-// ---------- Render ----------
+// ---------- Render circular ----------
 function render() {
   renderStatus();
+  renderVira();
+  renderAssentos();
+  renderCentro();
   renderPlacar();
-  renderMesa();
-  renderMaos();
   renderTapaLog();
   renderTapaSelect();
 }
 
 function renderStatus() {
-  const { escuraGlobal } = recalcularEscura();
   const el = document.getElementById("status-escura");
+  const { escuraGlobal } = recalcularEscura();
   if (escuraGlobal) {
     el.textContent = "🌑 ESCURA GLOBAL — todos com o mesmo placar!";
   } else {
-    const individuais = state.tentos
-      .map((t, i) => (t === 11 ? JOGADORES[i] : null))
-      .filter(Boolean);
-    el.textContent = individuais.length
-      ? `🌑 Escura individual: ${individuais.join(", ")} (11 tentos)`
-      : "";
+    const ind = state.tentos.map((t, i) => (t === 11 ? NOMES[i] : null)).filter(Boolean);
+    el.textContent = ind.length
+      ? `🌑 Escura individual: ${ind.join(", ")} (11 tentos)`
+      : (state.mensagem || "");
   }
+}
+
+function renderVira() {
+  const el = document.getElementById("vira");
+  el.textContent = state.vira
+    ? `Vira: ${rotuloCarta(state.vira)} → Manilha: ${state.manilhaValor}`
+    : "";
+}
+
+function renderAssentos() {
+  NOMES.forEach((nome, i) => {
+    const el = document.getElementById(`assento-${i}`);
+    if (!el) return;
+    el.innerHTML = "";
+
+    if (emEscura(i)) el.classList.add("escura");
+    else el.classList.remove("escura");
+
+    const nomeEl = document.createElement("div");
+    nomeEl.className = "nome";
+    nomeEl.textContent = nome;
+
+    const tentoEl = document.createElement("div");
+    tentoEl.className = "tentos";
+    tentoEl.textContent = `${state.tentos[i]} tentos`;
+
+    const extraEl = document.createElement("div");
+    extraEl.className = "extras";
+    extraEl.textContent = `Zeradas: ${state.zeradas[i]} | Tapas: ${state.tapas[i]}`;
+
+    el.appendChild(nomeEl);
+    el.appendChild(tentoEl);
+    el.appendChild(extraEl);
+
+    // Cartas na mão do assento
+    const maoEl = document.createElement("div");
+    maoEl.className = "mao";
+    const escura = emEscura(i);
+    state.maos[i].forEach((carta, idx) => {
+      const virada = escura || i !== HUMANO; // IA sempre virada; humano virado se escura
+      const elCarta = criarCartaEl(carta, {
+        virada,
+        onClick: i === HUMANO && !escura ? () => jogarCarta(HUMANO, idx) : null,
+      });
+      // Na escura, o humano clica às cegas
+      if (i === HUMANO && escura && state.fase === "jogando" && !state.quemJogou[HUMANO]) {
+        elCarta.addEventListener("click", () => jogarCarta(HUMANO, idx));
+      }
+      maoEl.appendChild(elCarta);
+    });
+    el.appendChild(maoEl);
+  });
+}
+
+function renderCentro() {
+  const el = document.getElementById("centro");
+  el.innerHTML = "";
+  NOMES.forEach((nome, i) => {
+    const carta = state.mesa[i];
+    if (carta) {
+      const virada = emEscura(i) && state.fase === "jogando";
+      el.appendChild(criarCartaEl(carta, { virada, jogada: true }));
+    } else {
+      const vazio = document.createElement("div");
+      vazio.className = "carta";
+      vazio.style.visibility = "hidden";
+      el.appendChild(vazio);
+    }
+  });
 }
 
 function renderPlacar() {
   const el = document.getElementById("placar");
   el.innerHTML = "";
-  JOGADORES.forEach((nome, i) => {
+  NOMES.forEach((nome, i) => {
     const div = document.createElement("div");
     div.className = "jogador";
     if (emEscura(i)) div.classList.add("escura");
     div.innerHTML = `
       <div class="nome">${nome}</div>
       <div class="tentos">${state.tentos[i]}</div>
-      <div class="extras">Zeradas: ${state.zeradas[i]} | Tapas: ${state.tapas[i]}</div>
     `;
     el.appendChild(div);
-  });
-}
-
-function renderMesa() {
-  const el = document.getElementById("mesa");
-  el.innerHTML = "";
-  JOGADORES.forEach((nome, i) => {
-    const slot = document.createElement("div");
-    slot.className = "slot";
-    const label = document.createElement("div");
-    label.className = "label";
-    label.textContent = nome;
-    slot.appendChild(label);
-    const carta = state.mesa[i];
-    if (carta) {
-      slot.appendChild(criarCartaEl(carta, { jogada: true }));
-    } else {
-      const vazio = document.createElement("div");
-      vazio.className = "carta";
-      vazio.style.visibility = "hidden";
-      slot.appendChild(vazio);
-    }
-    el.appendChild(slot);
-  });
-}
-
-function renderMaos() {
-  const el = document.getElementById("maos");
-  el.innerHTML = "";
-  JOGADORES.forEach((nome, i) => {
-    const wrap = document.createElement("div");
-    wrap.className = "mao";
-    const escura = emEscura(i);
-    state.maos[i].forEach((carta, idx) => {
-      const elCarta = criarCartaEl(carta, {
-        virada: escura,
-        onClick: () => jogarCarta(i, idx),
-      });
-      wrap.appendChild(elCarta);
-    });
-    el.appendChild(wrap);
   });
 }
 
@@ -257,12 +335,6 @@ function criarCartaEl(carta, { virada = false, jogada = false, onClick = null } 
   return div;
 }
 
-function rotuloCarta(carta) {
-  if (carta.valor === "GATO") return "🐱";
-  const simbolos = { ouro: "♦", espada: "♠", copas: "♥", paus: "♣" };
-  return `${carta.valor}${simbolos[carta.naipe] || ""}`;
-}
-
 function renderTapaLog() {
   const el = document.getElementById("tapa-log");
   el.innerHTML = state.tapaLog.map(l => `<div>${l}</div>`).join("");
@@ -270,8 +342,8 @@ function renderTapaLog() {
 
 function renderTapaSelect() {
   const sel = document.getElementById("tapa-quem");
-  if (sel.options.length === JOGADORES.length) return;
-  sel.innerHTML = JOGADORES.map((n, i) => `<option value="${i}">${n}</option>`).join("");
+  if (sel.options.length === NOMES.length) return;
+  sel.innerHTML = NOMES.map((n, i) => `<option value="${i}">${n}</option>`).join("");
 }
 
 // ---------- Eventos ----------
@@ -281,6 +353,7 @@ document.getElementById("btn-reset").addEventListener("click", () => {
   state.zeradas = [0, 0, 0];
   state.tapas = [0, 0, 0];
   state.tapaLog = [];
+  state.jogadorInicial = -1;
   novaMao();
 });
 document.getElementById("btn-tapa").addEventListener("click", () => {
@@ -290,4 +363,5 @@ document.getElementById("btn-tapa").addEventListener("click", () => {
 });
 
 // ---------- Init ----------
+state.jogadorInicial = -1;
 novaMao();

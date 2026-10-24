@@ -5,6 +5,7 @@
   --accent: #ffcc00;
   --danger: #ff5555;
   --ok: #50fa7b;
+  --mesa: #14532d;
 }
 
 * { box-sizing: border-box; }
@@ -19,52 +20,127 @@ body {
 
 header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 h1 { font-size: 1.4rem; margin: 0; }
-.status { font-weight: bold; color: var(--accent); }
+.status { font-weight: bold; color: var(--accent); text-align: right; }
+.vira { font-weight: bold; color: var(--accent); margin: .5rem 0; }
 
-.placar { display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; }
-.jogador {
-  background: #2b2b3c;
-  border-radius: 8px;
-  padding: .5rem 1rem;
-  min-width: 140px;
-  border: 2px solid transparent;
+/* ---------- Mesa circular ---------- */
+.mesa-circular {
+  position: relative;
+  width: min(90vw, 640px);
+  height: min(90vw, 640px);
+  margin: 1rem auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #1f6b3a 0%, var(--mesa) 70%, #0b2e18 100%);
+  border: 6px solid #0b2e18;
+  box-shadow: inset 0 0 60px rgba(0,0,0,.5);
 }
-.jogador.ativo { border-color: var(--accent); }
-.jogador.escura { border-color: var(--danger); }
-.jogador .nome { font-weight: bold; }
-.jogador .tentos { font-size: 1.5rem; color: var(--accent); }
-.jogador .extras { font-size: .75rem; color: #aaa; }
 
-.mesa { display: flex; gap: 1rem; min-height: 120px; margin: 1rem 0; flex-wrap: wrap; }
-.mesa .slot { display: flex; flex-direction: column; gap: .25rem; }
-.mesa .slot .label { font-size: .75rem; color: #aaa; }
+.assento {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  transform: translate(-50%, -50%);
+}
 
-.maos { display: flex; gap: 1rem; flex-wrap: wrap; }
-.mao { display: flex; gap: .5rem; }
+/* Humano: embaixo */
+.assento-humano {
+  left: 50%;
+  top: 88%;
+}
 
+/* IA 1: esquerda-cima */
+.assento-ia1 {
+  left: 18%;
+  top: 22%;
+}
+
+/* IA 2: direita-cima */
+.assento-ia2 {
+  left: 82%;
+  top: 22%;
+}
+
+.assento .nome {
+  font-weight: bold;
+  font-size: .85rem;
+  color: #fff;
+  background: rgba(0,0,0,.45);
+  padding: .15rem .5rem;
+  border-radius: 999px;
+}
+.assento .tentos {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--accent);
+  background: rgba(0,0,0,.55);
+  padding: .1rem .55rem;
+  border-radius: 999px;
+}
+.assento .extras {
+  font-size: .65rem;
+  color: #ccc;
+  background: rgba(0,0,0,.45);
+  padding: .1rem .45rem;
+  border-radius: 999px;
+}
+.assento.escura .nome { color: var(--danger); }
+
+.assento .mao {
+  display: flex;
+  gap: .3rem;
+  margin-top: .3rem;
+}
+
+/* Centro: cartas da vaza */
+.centro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: .4rem;
+}
+
+/* ---------- Cartas ---------- */
 .carta {
-  width: 64px;
-  height: 92px;
+  width: 54px;
+  height: 78px;
   border-radius: 6px;
   background: var(--card);
   color: #111;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
   user-select: none;
-  transition: transform .1s ease;
+  transition: transform .12s ease;
   border: 1px solid #ccc;
 }
 .carta:hover { transform: translateY(-4px); }
 .carta.virada { background: var(--card-back); color: transparent; border-color: #111; }
-.carta.virada::after { content: "🐄"; color: #444; font-size: 1.6rem; }
-.carta.jogada { cursor: default; opacity: .9; }
+.carta.virada::after { content: "🐄"; color: #555; font-size: 1.3rem; }
+.carta.jogada { cursor: default; opacity: .95; }
 .carta.vencedora { box-shadow: 0 0 0 3px var(--ok); }
 
-.controles { margin: 1rem 0; display: flex; gap: .5rem; }
+/* ---------- Placar compacto ---------- */
+.placar { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin: 1rem 0; }
+.jogador {
+  background: #2b2b3c;
+  border-radius: 8px;
+  padding: .35rem .75rem;
+  min-width: 120px;
+  border: 2px solid transparent;
+  font-size: .85rem;
+}
+.jogador.escura { border-color: var(--danger); }
+.jogador .nome { font-weight: bold; }
+.jogador .tentos { font-size: 1.2rem; color: var(--accent); }
+
+.controles { display: flex; gap: .5rem; justify-content: center; }
 button {
   background: var(--accent);
   color: #111;
@@ -78,5 +154,5 @@ button:hover { filter: brightness(1.1); }
 
 .tapas { margin-top: 2rem; }
 .tapa-linha { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
-.tapa-log { margin-top: .5rem; font-size: .85rem; color: #ccc; max-height: 200px; overflow-y: auto; }
+.tapa-log { margin-top: .5rem; font-size: .85rem; color: #ccc; max-height: 160px; overflow-y: auto; }
 .tapa-log div { padding: .15rem 0; border-bottom: 1px solid #333; }
