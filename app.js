@@ -124,6 +124,7 @@ function talvezIAsJoguem() {
   }
 }
 
+// --- A NOVA INTELIGÊNCIA DAS IAs (COM COALIZÃO) ---
 function jogadaIA(jogador) {
   if (state.fase !== "jogando") return;
   if (state.quemJogou[jogador]) return;
@@ -134,23 +135,67 @@ function jogadaIA(jogador) {
   let indice;
 
   if (escura) {
+    // Na escura, joga aleatório
     indice = Math.floor(Math.random() * mao.length);
   } else {
+    // 1. Identifica a situação da mesa
     const cartasNaMesa = state.mesa
-      .map((c, idx) => (c && idx !== jogador ? c : null))
+      .map((c, idx) => (c && idx !== jogador ? { carta: c, jogador: idx } : null))
       .filter(Boolean);
-    const forcas = cartasNaMesa.map(c => forcaDaCarta(c, state.manilhaValor));
-    const maiorNaMesa = forcas.length ? Math.max(...forcas) : -1;
+    
+    let maiorNaMesa = -1;
+    let donoDaMaior = -1;
+
+    cartasNaMesa.forEach(item => {
+      const f = forcaDaCarta(item.carta, state.manilhaValor);
+      if (f > maiorNaMesa) {
+        maiorNaMesa = f;
+        donoDaMaior = item.jogador;
+      }
+    });
 
     const ordenadas = mao
       .map((c, idx) => ({ idx, forca: forcaDaCarta(c, state.manilhaValor) }))
       .sort((a, b) => a.forca - b.forca);
 
-    if (maiorNaMesa < 0) {
+    // 2. Lógica de Coalizão (Treta)
+    // Se eu sou o segundo a jogar, e o primeiro a jogar foi alguém que VAI CHEGAR em 11 ou 12 com essa vaza
+    // E eu não posso fazer nada para impedir que ele ganhe a mão inteira...
+    // Vamos tentar "entregar" a vaza para o terceiro jogador, se ele for um aliado em potencial (ou simplesmente não o alvo).
+    
+    const alvo = donoDaMaior;
+    let tentarCoalizao = false;
+
+    if (alvo !== -1 && alvo !== jogador) {
+      const tentosAlvo = state.tentos[alvo];
+      // Se o alvo está prestes a ficar com 11 (ou se já está com 11 e vai pontuar)
+      // E a vaza atual dá pontos para ele.
+      if (tentosAlvo >= 8 && state.vazaAtual === 0) {
+        tentarCoalizao = true;
+      }
+    }
+
+    if (tentarCoalizao && cartasNaMesa.length === 1) {
+      // Eu sou o segundo a jogar. O primeiro jogou uma carta forte.
+      // Em vez de tentar ganhar (e talvez não conseguir), eu posso tentar dar a vaza para o terceiro jogador?
+      // Não, a IA não sabe o que o terceiro vai jogar. 
+      // O melhor que ela pode fazer é jogar a carta MAIS FRACA, para não pontuar,
+      // e torcer para o terceiro jogador ter uma carta maior que o alvo.
+      // Se ela tiver uma carta que GANHA do alvo, mas ela quer que o terceiro ganhe, 
+      // ela joga uma carta fraca de propósito, "dando" a chance para o terceiro.
+      
+      // Joga a mais fraca para não pontuar e deixar a mesa aberta.
       indice = ordenadas[0].idx;
     } else {
-      const vencedora = ordenadas.find(o => o.forca > maiorNaMesa);
-      indice = vencedora ? vencedora.idx : ordenadas[0].idx;
+      // Lógica Normal
+      if (maiorNaMesa < 0) {
+        // Sou o primeiro a jogar. Jogo a mais fraca para guardar as boas.
+        indice = ordenadas[0].idx;
+      } else {
+        // Tento achar a menor carta que ganha do maior na mesa.
+        const vencedora = ordenadas.find(o => o.forca > maiorNaMesa);
+        indice = vencedora ? vencedora.idx : ordenadas[0].idx;
+      }
     }
   }
 
@@ -169,7 +214,6 @@ function resolverVaza() {
     state.vazasGanhas[vencedor]++;
     const pontos = PONTOS_POR_VAZA[state.vazaAtual] ?? 0;
     
-    // Soma os pontos da vaza (a checagem de 12/13 fica para o fim da mão)
     if (pontos > 0) {
       state.tentos[vencedor] += pontos;
       state.mensagem = `${NOMES[vencedor]} ganhou a ${state.vazaAtual + 1}ª vaza (+${pontos})`;
@@ -197,7 +241,6 @@ function resolverVaza() {
 }
 
 function resolverMao() {
-  // Avalia as vazas ganhas
   const [g1, g2, g3] = state.vazasGanhas;
   let vencedor = null;
   if (g1 > g2 && g1 > g3) vencedor = 0;
@@ -214,7 +257,6 @@ function resolverMao() {
 }
 
 function verificarFimDeJogo() {
-  // 1. Verifica se alguém estourou
   for (let i = 0; i < 3; i++) {
     if (state.tentos[i] >= 13) {
       state.tentos[i] = 0;
@@ -223,7 +265,6 @@ function verificarFimDeJogo() {
     }
   }
 
-  // 2. Verifica se alguém fez 12
   for (let i = 0; i < 3; i++) {
     if (state.tentos[i] === 12) {
       state.fase = "fimPartida";
